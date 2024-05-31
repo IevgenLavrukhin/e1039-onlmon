@@ -32,7 +32,7 @@ OnlMonTrigEP::OnlMonTrigEP(const std::string rs_top_0, const std::string rs_top_
 {
   NumCanvases(1);
   Name("OnlMonTrigEP" ); 
-  Title("FPGA1 Purity & Efficiency" );
+  Title("FPGA1 Purity/Efficiency" );
 
   rs_top_check_p[0] = 0;
   rs_top_check_p[1] = 0;

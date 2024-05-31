@@ -14,15 +14,14 @@ class OnlMonV1495: public OnlMonClient {
   int         list_det_id  [N_DET];
 
   int is_H1; 
- 
+  TH1* h1_cnt;
   TH1* h1_ele     [N_DET];
   TH1* h1_ele_in  [N_DET];
   TH1* h1_time    [N_DET];
   TH1* h1_time_in [N_DET];
   TH2* h2_time_ele[N_DET];
-
   TH1* RF_proj[8];
-  TLine* proj_line[8];
+  //TLine* proj_line[8];
 
  public:
   OnlMonV1495(const HodoType_t type, const int lvl);

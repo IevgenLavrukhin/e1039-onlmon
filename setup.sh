@@ -1,6 +1,6 @@
-DIR_TOP=$(dirname $(readlink -f $BASH_SOURCE))
-DIR_BUILD=$DIR_TOP/build
-DIR_INST=$DIR_TOP/inst
+export E1039_ONLMON=$(dirname $(readlink -f $BASH_SOURCE))
+DIR_BUILD=$E1039_ONLMON/build
+DIR_INST=$E1039_ONLMON/inst
 
 source /data2/e1039/this-e1039.sh
 export   LD_LIBRARY_PATH=$DIR_INST/lib:$LD_LIBRARY_PATH
@@ -17,7 +17,7 @@ function cmake-this {
     fi
     mkdir -p $DIR_BUILD
     echo "Run cmake..."
-    ( cd $DIR_BUILD && cmake -DCMAKE_INSTALL_PREFIX=$DIR_INST $DIR_TOP/src )
+    ( cd $DIR_BUILD && cmake -DCMAKE_INSTALL_PREFIX=$DIR_INST $E1039_ONLMON/src )
     local RET=$?
     if [ $RET -eq 0 ] ; then
 	echo "OK.  Run 'make-this' at any time/directory."

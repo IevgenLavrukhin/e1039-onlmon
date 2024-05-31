@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <TSystem.h>
 #include <TGFrame.h>
+#include <TGCanvas.h>
 #include <TGTextView.h>
 #include <TGButton.h>
 #include <TGLabel.h>
@@ -46,11 +47,18 @@ void OnlMonUI::BuildInterface()
     m_fr_main->AddFrame(head); 
   }
 
+  TGCanvas* can_subsys = new TGCanvas(m_fr_main, 200, 700, kFixedSize);
+  m_fr_main->AddFrame(can_subsys, new TGLayoutHints(kLHintsNormal | kLHintsExpandX));
+  TGVerticalFrame* fr_subsys = new TGVerticalFrame(can_subsys->GetViewPort());
+  can_subsys->SetContainer(fr_subsys);
+
   TGTextButton*  button[99];
   for (unsigned int ii = 0; ii < m_list_omc->size(); ii++) {
-    button[ii] = new TGTextButton(m_fr_main, m_list_omc->at(ii)->Title().c_str());
+    //button[ii] = new TGTextButton(m_fr_main, m_list_omc->at(ii)->Title().c_str());
+    button[ii] = new TGTextButton(fr_subsys, m_list_omc->at(ii)->Title().c_str());
     button[ii]->Connect("Clicked()", "OnlMonClient", m_list_omc->at(ii), "StartMonitor()");
-    m_fr_main->AddFrame(button[ii], new TGLayoutHints(kLHintsNormal | kLHintsExpandX, 2,2,2,2)); // (l, r, t, b) 
+    //m_fr_main->AddFrame(button[ii], new TGLayoutHints(kLHintsNormal | kLHintsExpandX, 2,2,2,2)); // (l, r, t, b) 
+    fr_subsys->AddFrame(button[ii], new TGLayoutHints(kLHintsNormal | kLHintsExpandX, 2,2,2,2)); // (l, r, t, b) 
   }
 
   TGLabel* lbl_sp_sel = new TGLabel(m_fr_main, "- - - Spill Selection - - -");

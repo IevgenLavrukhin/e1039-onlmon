@@ -40,10 +40,13 @@ int OnlMonV1495::InitOnlMon(PHCompositeNode* topNode)
 
 int OnlMonV1495::InitRunOnlMon(PHCompositeNode* topNode)
 {
-  const double DT = 5.0; // 1 ns per single count of v1495 TDC
-  int NT    = 100;
-  double T0 = 100.5*DT;
-  double T1 = 200.5*DT;
+  h1_cnt = new TH1D("h1_cnt", ";Type;Count", 15, 0.5, 15.5);
+  RegisterHist(h1_cnt);
+
+  const double DT = 2.0; // 1 ns per single count of v1495 TDC
+  int NT    = 1000;
+  double T0 =    0.5*DT;
+  double T1 = 1000.5*DT;
   switch (m_type) {
   case H1X:  SetDet("H1T"  ,"H1B"  ); break;
   case H2X:  SetDet("H2T"  ,"H2B"  ); break;
@@ -52,7 +55,7 @@ int OnlMonV1495::InitRunOnlMon(PHCompositeNode* topNode)
   case H1Y:  SetDet("H1L"  ,"H1R"  ); break;
   case H2Y:  SetDet("H2L"  ,"H2R"  ); break;
   case H4Y1: SetDet("H4Y1L","H4Y1R"); break;
-  case H4Y2: SetDet("H4Y2L","H4Y2R"); NT=100; T0=90.5*DT; T1=190.5*DT; break;
+  case H4Y2: SetDet("H4Y2L","H4Y2R"); break;
   }
 
   GeomSvc* geom = GeomSvc::instance();
@@ -117,10 +120,9 @@ int OnlMonV1495::InitRunOnlMon(PHCompositeNode* topNode)
     oss.str("");
     oss << "RF TDC Projection" << ";TDC RF;Hit count";
     RF_proj[i]->SetTitle(oss.str().c_str());
-
+  
     RegisterHist(RF_proj[i]);
   }
-
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -131,7 +133,16 @@ int OnlMonV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
   SQHitVector* hit_vec = findNode::getClass<SQHitVector>(topNode, "SQTriggerHitVector");
   if (!evt || !hit_vec) return Fun4AllReturnCodes::ABORTEVENT;
 
-  int is_FPGA_event = (evt->get_trigger(SQEvent::MATRIX1) || evt->get_trigger(SQEvent::MATRIX2) ||evt->get_trigger(SQEvent::MATRIX3)||evt->get_trigger(SQEvent::MATRIX4) ) ? 1 : 0;
+  h1_cnt->AddBinContent(1);
+
+  bool is_FPGA_event =
+    evt->get_trigger(SQEvent::MATRIX1) ||
+    evt->get_trigger(SQEvent::MATRIX2) ||
+    evt->get_trigger(SQEvent::MATRIX3) || 
+    evt->get_trigger(SQEvent::MATRIX4)   ;
+  if (! is_FPGA_event) return Fun4AllReturnCodes::EVENT_OK;
+
+  h1_cnt->AddBinContent(2);
 
 //RF ***************************************************************************************
 //Looping through RF data to determine RF buckets
@@ -140,19 +151,11 @@ int OnlMonV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
   for(auto it = vec1->begin(); it != vec1->end(); it++){
     double tdc_time = (*it)->get_tdc_time();
     float element = (*it)->get_element_id();
-
-    if(is_FPGA_event){
-        //Fill 1D histograms with RF data to determine RF buckets
-        if(element == 3 || element == 4){
-           int cnt_mod = count%8;
-           RF_proj[cnt_mod]->Fill(tdc_time);
-        }
-
-
-    }else{
-
+    //Fill 1D histograms with RF data to determine RF buckets
+    if(element == 3 || element == 4){
+      int cnt_mod = count%8;
+      RF_proj[cnt_mod]->Fill(tdc_time);
     }
-
     count ++;
   }
 
@@ -165,14 +168,12 @@ int OnlMonV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
       if ((*it)->get_level() != m_lvl) continue;
       int    ele  = (*it)->get_element_id();
       double time = (*it)->get_tdc_time  ();
-      if(is_FPGA_event){
-        h1_ele     [i_det]->Fill(ele );
-        h1_time    [i_det]->Fill(time);
-        h2_time_ele[i_det]->Fill(ele, time);
-        if ((*it)->is_in_time()) {
-          h1_ele_in [i_det]->Fill(ele );
-          h1_time_in[i_det]->Fill(time);
-        }
+      h1_ele     [i_det]->Fill(ele );
+      h1_time    [i_det]->Fill(time);
+      h2_time_ele[i_det]->Fill(ele, time);
+      if ((*it)->is_in_time()) {
+        h1_ele_in [i_det]->Fill(ele );
+        h1_time_in[i_det]->Fill(time);
       }
     }
   }
@@ -187,6 +188,9 @@ int OnlMonV1495::EndOnlMon(PHCompositeNode* topNode)
 
 int OnlMonV1495::FindAllMonHist()
 {
+  h1_cnt = FindMonHist("h1_cnt");
+  if (! h1_cnt) return 1;
+
   ostringstream oss;
   for (int i_det = 0; i_det < N_DET; i_det++) {
     oss.str("");
@@ -210,23 +214,27 @@ int OnlMonV1495::FindAllMonHist()
     h2_time_ele[i_det] = (TH2*)FindMonHist(oss.str().c_str());
     if (! h2_time_ele[i_det]) return 1;
   }
+
+  for (int i = 0; i < 8; i++) {
+    oss.str("");
+    oss << "RF_proj_" << i;
+    RF_proj[i] = (TH1*)FindMonHist(oss.str().c_str());
+    if (! RF_proj[i]) return 1;
+  }
+
   return 0;
 }
 
 int OnlMonV1495::DrawMonitor()
 {
-  int binmax[8];
-  double x[8];
   //Determine maximum value from projection histos to determine RF rising edges
-  for(int i = 0; i < 8; i++){
-     binmax[i] = RF_proj[i]->GetMaximumBin();
-     x[i] = RF_proj[i]->GetXaxis()->GetBinCenter(binmax[i]);
-     //Lines to show RF buckets on 2d histo
-     if(is_H1 == 1){
-       proj_line[i] = new TLine(0.5,x[i],23.5,x[i]);
-     }else{
-       proj_line[i] = new TLine(0.5,x[i],16.5,x[i]);
-     }
+  TLine* proj_line[8];
+  for (int i = 0; i < 8; i++) {
+    int binmax = RF_proj[i]->GetMaximumBin();
+    double x = RF_proj[i]->GetXaxis()->GetBinCenter(binmax);
+    //Lines to show RF buckets on 2d histo
+    if (is_H1 == 1) proj_line[i] = new TLine(0.5, x, 23.5, x);
+    else            proj_line[i] = new TLine(0.5, x, 16.5, x);
   }
 
   OnlMonCanvas* can0 = GetCanvas(0);
@@ -249,7 +257,7 @@ int OnlMonV1495::DrawMonitor()
     TProfile* pr = h2_time_ele[i_det]->ProfileX(oss.str().c_str());
     pr->SetLineColor(kBlack);
     pr->Draw("E1same");
-    for(int i = 0; i < 8; i++){
+    for (int i = 0; i < 8; i++) {
       proj_line[i]->SetLineStyle(2);
       proj_line[i]->SetLineWidth(3);
       proj_line[i]->SetLineColor(kRed);
@@ -257,6 +265,9 @@ int OnlMonV1495::DrawMonitor()
     }
   }
   //can0->SetStatus(OnlMonCanvas::OK);
+  //int n_evt_all = h1_cnt->GetBinContent(1);
+  int n_evt_ana = h1_cnt->GetBinContent(2);
+  can0->AddMessage(TString::Format("N of FPGA events analyzed = %d.", n_evt_ana));
 
   OnlMonCanvas* can1 = GetCanvas(1);
   TPad* pad1 = can1->GetMainPad();
