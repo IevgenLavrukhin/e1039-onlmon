@@ -5,7 +5,7 @@ R__LOAD_LIBRARY(OnlMon)
 R__LOAD_LIBRARY(pheve_modules)
 //R__LOAD_LIBRARY(ktracker)
 
-int Fun4MainDaq(const int run=46, const int nevent=0, const bool is_online=false)
+int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=false)
 {
   gSystem->Umask(0002);
   const bool output_full_dst = false;
@@ -22,24 +22,28 @@ int Fun4MainDaq(const int run=46, const int nevent=0, const bool is_online=false
     UtilOnline::UseOutputLocationForDevel();
   }
 
+  const char* deco_verb_char = gSystem->Getenv("E1039_DECODER_VERBOSITY");
+  int deco_verb = (deco_verb_char ? atoi(deco_verb_char) : 0);
+  cout << "Verbosity = " << deco_verb << ".\n";
+
   DecoStatusDb deco_stat;
-  deco_stat.RunStarted(run);
+  deco_stat.RunStarted(run_id);
 
   ostringstream oss;
-  oss << UtilOnline::GetCodaFileDir() << "/" << UtilOnline::RunNum2CodaFile(run);
+  oss << UtilOnline::GetCodaFileDir() << "/" << UtilOnline::RunNum2CodaFile(run_id);
   string fn_in = oss.str();
   oss.str("");
-  oss << UtilOnline::GetDstFileDir() << "/" << UtilOnline::RunNum2DstFile(run);
+  oss << UtilOnline::GetDstFileDir() << "/" << UtilOnline::RunNum2DstFile(run_id);
   string fn_out = oss.str();
   gSystem->mkdir(UtilOnline::GetDstFileDir().c_str(), true);
 
   OnlMonServer* se = OnlMonServer::instance();
-  //se->Verbosity(1);
-  se->setRun(run); // This sets the `RUNNUMBER` flag.
+  se->Verbosity(deco_verb);
+  se->setRun(run_id); // This sets the `RUNNUMBER` flag.
   se->SetOnline(is_online);
 
   Fun4AllEVIOInputManager *in = new Fun4AllEVIOInputManager("MainDaq");
-  in->Verbosity(3);
+  in->Verbosity(deco_verb);
   in->SetOnline(is_online);
   //in->UseLocalSpillID(true); // default = false
   //if (is_online) in->PretendSpillInterval(20);
@@ -89,6 +93,10 @@ int Fun4MainDaq(const int run=46, const int nevent=0, const bool is_online=false
     se->registerSubsystem(new OnlMonCham (OnlMonCham::D3m));
     se->registerSubsystem(new OnlMonProp (OnlMonProp::P1));
     se->registerSubsystem(new OnlMonProp (OnlMonProp::P2));
+
+    auto ext_hodo_in_time = new ExtractHodoInTime();
+    ext_hodo_in_time->SetOutputDir("/data4/e1039_data/online/intime", run_id);
+    se->registerSubsystem(ext_hodo_in_time);
   }
 
   if (output_full_dst) {
@@ -109,7 +117,7 @@ int Fun4MainDaq(const int run=46, const int nevent=0, const bool is_online=false
     oss.str("");
     oss << "/data4/e1039_data/online/evt_disp";
     gSystem->mkdir(oss.str().c_str(), true);
-    oss << "/run_" << setfill('0') << setw(6) << run << "_evt_disp.root";
+    oss << "/run_" << setfill('0') << setw(6) << run_id << "_evt_disp.root";
     Fun4AllDstOutputManager *om_eddst = new Fun4AllDstOutputManager("EDDST", oss.str());
     om_eddst->EnableRealTimeSave();
     om_eddst->AddEventSelector("EvtDispFilter");
@@ -118,7 +126,7 @@ int Fun4MainDaq(const int run=46, const int nevent=0, const bool is_online=false
 
   if (std_mode) {
     Fun4AllSRawEventOutputManager *om_sraw = new Fun4AllSRawEventOutputManager("/data4/e1039_data/online");
-    om_sraw->Verbosity(10);
+    om_sraw->Verbosity(deco_verb);
     om_sraw->EnableDB();
     se->registerOutputManager(om_sraw);
   }
@@ -126,7 +134,7 @@ int Fun4MainDaq(const int run=46, const int nevent=0, const bool is_online=false
   se->run(nevent);
   se->End();
   se->PrintTimer();
-  deco_stat.RunFinished(run, 0); // always "result = 0" for now.
+  deco_stat.RunFinished(run_id, 0); // always "result = 0" for now.
   
   delete se;
   cout << "Fun4MainDaq Done!" << endl;

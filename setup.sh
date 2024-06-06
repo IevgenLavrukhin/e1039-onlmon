@@ -11,10 +11,10 @@ function cmake-this {
 	echo "Clean up the build directory..."
 	\rm -rf $DIR_BUILD
     fi
-    if [ -e $DIR_INST ] ; then
-	echo "Clean up the install directory..."
-	\rm -rf $DIR_INST
-    fi
+    #if [ -e $DIR_INST ] ; then
+    #	echo "Clean up the install directory..."
+    #	\rm -rf $DIR_INST
+    #fi
     mkdir -p $DIR_BUILD
     echo "Run cmake..."
     ( cd $DIR_BUILD && cmake -DCMAKE_INSTALL_PREFIX=$DIR_INST $E1039_ONLMON/src )
@@ -28,10 +28,11 @@ function cmake-this {
 }
 
 function make-this {
+    local -r ARG=$1
     if [ ! -e $DIR_BUILD/Makefile ] ; then
 	echo "The build directory is not ready.  Complete 'cmake-this' first."
 	return 1
     fi
-    ( cd $DIR_BUILD && make install )
+    ( cd $DIR_BUILD && make $ARG )
     return $?
 }

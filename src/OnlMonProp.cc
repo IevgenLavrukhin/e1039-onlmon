@@ -55,10 +55,10 @@ int OnlMonProp::InitRunOnlMon(PHCompositeNode* topNode)
     oss << name << ";Element ID;Hit count";
     h1_ele[pl]->SetTitle(oss.str().c_str());
 
-    const double DT = 80/9.0; // 4/9 ns per single count of Taiwan TDC
-    const int NT    = 100;
-    const double T0 =   0.5*DT;
-    const double T1 = 100.5*DT;
+    const double DT = 72/9.0; // 4/9 ns per single count of Taiwan TDC
+    const int    NT = 200;
+    const double T0 =  50.5*DT;
+    const double T1 = 250.5*DT;
 
     oss.str("");
     oss << "h1_time_" << pl;

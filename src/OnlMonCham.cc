@@ -34,7 +34,7 @@ int OnlMonCham::InitOnlMon(PHCompositeNode* topNode)
 
 int OnlMonCham::InitRunOnlMon(PHCompositeNode* topNode)
 {
-  const double DT = 40/9.0; // 4/9 ns per single count of Taiwan TDC
+  const double DT = 36/9.0; // 4/9 ns per single count of Taiwan TDC
   int    NT = 300;
   double T0 = 150.5*DT;
   double T1 = 450.5*DT;
@@ -45,7 +45,7 @@ int OnlMonCham::InitRunOnlMon(PHCompositeNode* topNode)
   case D0 :  name_regex = "^D0" ;  break;
   case D1 :  name_regex = "^D1" ;  break;
   case D2 :  name_regex = "^D2" ;  NT=300; T0=100.5*DT; T1=400.5*DT;  break;
-  case D3p:  name_regex = "^D3p";  NT=300; T0= 50.5*DT; T1=350.5*DT;  break;
+  case D3p:  name_regex = "^D3p";  NT=300; T0= 70.5*DT; T1=370.5*DT;  break;
   case D3m:  name_regex = "^D3m";  NT=300; T0=100.5*DT; T1=400.5*DT;  break;
   }
   vector<int> list_det_id = geom->getDetectorIDs(name_regex);

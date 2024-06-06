@@ -38,7 +38,7 @@ int OnlMonMainDaq::InitOnlMon(PHCompositeNode* topNode)
 
 int OnlMonMainDaq::InitRunOnlMon(PHCompositeNode* topNode)
 {
-  h1_trig = new TH1D("h1_trig", "Trigger Status;Trigger;N of events", 10, 0.5, 10.5);
+  h1_trig = new TH1D("h1_trig", "Trigger Status;;N of events", 11, 0.5, 11.5);
   h1_trig->GetXaxis()->SetBinLabel( 1, "FPGA1");
   h1_trig->GetXaxis()->SetBinLabel( 2, "FPGA2");
   h1_trig->GetXaxis()->SetBinLabel( 3, "FPGA3");
@@ -49,16 +49,22 @@ int OnlMonMainDaq::InitRunOnlMon(PHCompositeNode* topNode)
   h1_trig->GetXaxis()->SetBinLabel( 8, "NIM3");
   h1_trig->GetXaxis()->SetBinLabel( 9, "NIM4");
   h1_trig->GetXaxis()->SetBinLabel(10, "NIM5");
+  h1_trig->GetXaxis()->SetBinLabel(11, "None");
 
   h1_n_taiwan = new TH1D("h1_n_taiwan", "Taiwan TDC Status;N of boards/event;N of events", 200, -0.5, 199.5);
 
-  h1_evt_qual = new TH1D("h1_evt_qual", "Event Status;Event-quality bit;N of events", 33, -0.5, 32.5);
+  h1_evt_qual = new TH1D("h1_evt_qual", "Event Status;;N of events", 10, -0.5, 9.5); // , 33, -0.5, 32.5); // Event-quality bit
   ostringstream oss;
-  h1_evt_qual->GetXaxis()->SetBinLabel(1, "OK");
-  for (int ii = 1; ii <= 32; ii++) {
-    oss.str("");  oss << ii;
-    h1_evt_qual->GetXaxis()->SetBinLabel(ii+1, oss.str().c_str());
-  }
+  h1_evt_qual->GetXaxis()->SetBinLabel(1, "All");
+  h1_evt_qual->GetXaxis()->SetBinLabel(2, "No QIE");
+  h1_evt_qual->GetXaxis()->SetBinLabel(3, "No V1495 TDC");
+  h1_evt_qual->GetXaxis()->SetBinLabel(4, "No Taiwan TDC");
+  h1_evt_qual->GetXaxis()->SetBinLabel(5, "No trigger bit");
+  h1_evt_qual->GetXaxis()->SetBinLabel(6, "No trigger count");
+  //for (int ii = 1; ii <= 32; ii++) {
+  //  oss.str("");  oss << ii;
+  //  h1_evt_qual->GetXaxis()->SetBinLabel(ii+1, oss.str().c_str());
+  //}
 
   h1_flag_v1495 = new TH1D("h1_flag_v1495", "V1495 Status;v1495 status bit; N of v1495 events", 5, -0.5, 4.5);
   h1_flag_v1495->GetXaxis()->SetBinLabel(1, "OK");
@@ -124,6 +130,7 @@ int OnlMonMainDaq::ProcessEventOnlMon(PHCompositeNode* topNode)
   if (evt->get_trigger(SQEvent::NIM3   )) h1_trig->Fill( 8);
   if (evt->get_trigger(SQEvent::NIM4   )) h1_trig->Fill( 9);
   if (evt->get_trigger(SQEvent::NIM5   )) h1_trig->Fill(10);
+  if (evt->get_trigger() == 0           ) h1_trig->Fill(11);
 
   h1_cnt->SetBinContent( 1, run->get_n_spill        ());
   h1_cnt->SetBinContent( 2, run->get_n_evt_all      ());
@@ -143,11 +150,17 @@ int OnlMonMainDaq::ProcessEventOnlMon(PHCompositeNode* topNode)
 
   h1_n_taiwan->Fill(hevt->get_n_board_taiwan());
 
-  int dq = evt->get_data_quality();
-  if (dq == 0) h1_evt_qual->Fill(0);
-  for (int bit = 0; bit < 32; bit++) {
-    if ((dq >> bit) & 0x1) h1_evt_qual->Fill(bit + 1);
-  }
+  h1_evt_qual->AddBinContent(1);
+  if (hevt->get_n_board_qie()        == 0) h1_evt_qual->AddBinContent(2);
+  if (hevt->get_n_board_v1495()      == 0) h1_evt_qual->AddBinContent(3);
+  if (hevt->get_n_board_taiwan()     == 0) h1_evt_qual->AddBinContent(4);
+  if (hevt->get_n_board_trig_bit()   == 0) h1_evt_qual->AddBinContent(5);
+  if (hevt->get_n_board_trig_count() == 0) h1_evt_qual->AddBinContent(6);
+  //int dq = evt->get_data_quality();
+  //if (dq == 0) h1_evt_qual->Fill(0);
+  //for (int bit = 0; bit < 32; bit++) {
+  //  if ((dq >> bit) & 0x1) h1_evt_qual->Fill(bit + 1);
+  //}
 
   int v1495 = hevt->get_flag_v1495();
   if (v1495 == 0) h1_flag_v1495->Fill(0);
@@ -241,10 +254,12 @@ int OnlMonMainDaq::DrawMonitor()
 
   pad011->cd();
   pad011->SetGrid();
+  h1_trig->GetXaxis()->SetLabelSize(0.08);
   h1_trig->Draw();
 
   pad012->cd();
   pad012->SetGrid();
+  h1_flag_v1495->GetXaxis()->SetLabelSize(0.08);
   h1_flag_v1495->Draw();
 
   pad0->cd(2);
@@ -255,8 +270,36 @@ int OnlMonMainDaq::DrawMonitor()
 
   pad021->cd();
   pad021->SetGrid();
+  pad021->SetMargin(0.1, 0.1, 0.25, 0.1); // (l, r, b, t)
+  //h1_evt_qual->GetXaxis()->LabelsOption("v");
+  h1_evt_qual->GetXaxis()->SetLabelSize(0.10);
   h1_evt_qual->Draw();
-
+  {
+    double n_all = h1_evt_qual->GetBinContent(1);
+    if (n_all > 1000) {
+      double r_qie    = h1_evt_qual->GetBinContent(2) / n_all;
+      double r_v1495  = h1_evt_qual->GetBinContent(3) / n_all;
+      double r_taiwan = h1_evt_qual->GetBinContent(4) / n_all;
+      double r_t_bit  = h1_evt_qual->GetBinContent(5) / n_all;
+      if (r_qie > 0.01) {
+        can0->SetWorseStatus(OnlMonCanvas::WARN);
+        can0->AddMessage(TString::Format("No QIE info in %.0f of events.", 100*r_qie).Data());
+      }
+      if (r_v1495 > 0.01) {
+        can0->SetWorseStatus(OnlMonCanvas::WARN);
+        can0->AddMessage(TString::Format("No V1495-TDC info in %.0f of events.", 100*r_v1495).Data());
+      }
+      if (r_taiwan > 0.01) {
+        can0->SetWorseStatus(OnlMonCanvas::WARN);
+        can0->AddMessage(TString::Format("No Taiwan-TDC info in %.0f of events.", 100*r_taiwan).Data());
+      }
+      if (r_t_bit > 0.01) {
+        can0->SetWorseStatus(OnlMonCanvas::WARN);
+        can0->AddMessage(TString::Format("No trigger-bit info in %.0f of events.", 100*r_t_bit).Data());
+      }
+    }
+  }
+  
   pad022->cd();
   pad022->SetGrid();
   h1_n_taiwan->Draw();

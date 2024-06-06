@@ -14,10 +14,14 @@
 #include <geom_svc/GeomSvc.h>
 #include <UtilAna/UtilSQHit.h>
 #include <UtilAna/UtilHist.h>
+#include "OnlMonParam.h"
 #include "OnlMonV1495.h"
 using namespace std;
 
-OnlMonV1495::OnlMonV1495(const HodoType_t type, const int lvl) : m_type(type), m_lvl(lvl)
+OnlMonV1495::OnlMonV1495(const HodoType_t type, const int lvl)
+  : m_type(type)
+  , m_lvl(lvl)
+  , m_trig_mask(1023) // 1023 = 0b1111111111 = all triggers
 {
   NumCanvases(2);
   is_H1 = 0;
@@ -42,6 +46,9 @@ int OnlMonV1495::InitRunOnlMon(PHCompositeNode* topNode)
 {
   h1_cnt = new TH1D("h1_cnt", ";Type;Count", 15, 0.5, 15.5);
   RegisterHist(h1_cnt);
+
+  OnlMonParam param("OnlMonV1495");
+  m_trig_mask = param.GetIntParam("TRIGGER_MASK");
 
   const double DT = 2.0; // 1 ns per single count of v1495 TDC
   int NT    = 1000;
@@ -101,7 +108,7 @@ int OnlMonV1495::InitRunOnlMon(PHCompositeNode* topNode)
 
     oss.str("");
     oss << "h2_time_ele_" << i_det;
-    h2_time_ele[i_det] = new TH2D(oss.str().c_str(), "",n_ele, 0.5, n_ele+0.5, 80, 720.5, 880.5);
+    h2_time_ele[i_det] = new TH2D(oss.str().c_str(), "",n_ele, 0.5, n_ele+0.5, 80, 680.5, 840.5);
     oss.str("");
     oss << name << ";Element ID;tdcTime;Hit count";
     h2_time_ele[i_det]->SetTitle(oss.str().c_str());
@@ -116,7 +123,7 @@ int OnlMonV1495::InitRunOnlMon(PHCompositeNode* topNode)
   for(int i = 0; i < 8; i++){
     oss.str("");
     oss << "RF_proj_" << i;
-    RF_proj[i] = new TH1D(oss.str().c_str(), "",160 , 720.5, 880.5);
+    RF_proj[i] = new TH1D(oss.str().c_str(), "",160 , 680.5, 840.5);
     oss.str("");
     oss << "RF TDC Projection" << ";TDC RF;Hit count";
     RF_proj[i]->SetTitle(oss.str().c_str());
@@ -134,13 +141,9 @@ int OnlMonV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
   if (!evt || !hit_vec) return Fun4AllReturnCodes::ABORTEVENT;
 
   h1_cnt->AddBinContent(1);
-
-  bool is_FPGA_event =
-    evt->get_trigger(SQEvent::MATRIX1) ||
-    evt->get_trigger(SQEvent::MATRIX2) ||
-    evt->get_trigger(SQEvent::MATRIX3) || 
-    evt->get_trigger(SQEvent::MATRIX4)   ;
-  if (! is_FPGA_event) return Fun4AllReturnCodes::EVENT_OK;
+  
+  unsigned short trig_bits = evt->get_trigger();
+  if (! (trig_bits & m_trig_mask)) return Fun4AllReturnCodes::EVENT_OK;
 
   h1_cnt->AddBinContent(2);
 
@@ -267,7 +270,7 @@ int OnlMonV1495::DrawMonitor()
   //can0->SetStatus(OnlMonCanvas::OK);
   //int n_evt_all = h1_cnt->GetBinContent(1);
   int n_evt_ana = h1_cnt->GetBinContent(2);
-  can0->AddMessage(TString::Format("N of FPGA events analyzed = %d.", n_evt_ana));
+  can0->AddMessage(TString::Format("N of analyzed events = %d.", n_evt_ana));
 
   OnlMonCanvas* can1 = GetCanvas(1);
   TPad* pad1 = can1->GetMainPad();
@@ -275,7 +278,7 @@ int OnlMonV1495::DrawMonitor()
   for (int i_det = 0; i_det < N_DET; i_det++) {
     TVirtualPad* pad11 = pad1->cd(i_det+1);
     pad11->SetGrid();
-    //UtilHist::AutoSetRange(h1_time[i_det]);
+    UtilHist::AutoSetRange(h1_time[i_det]);
     h1_time[i_det]->SetLineColor(kBlack);
     h1_time[i_det]->Draw();
     h1_time_in[i_det]->SetLineColor(kBlue);

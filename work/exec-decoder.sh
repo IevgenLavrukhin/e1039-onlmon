@@ -13,11 +13,12 @@ E1039_CORE_VERSION=default
 E1039_CORE_DIR=
 IS_ONLINE=false
 DECO_MODE=devel
+DECO_VERB=0
 LAUNCHER=no
 N_EVT=0
 
 OPTIND=1
-while getopts ":v:V:osdle:" OPT ; do
+while getopts ":v:V:osxdle:" OPT ; do
     case $OPT in
         v ) E1039_CORE_VERSION=$OPTARG
             echo "  E1039_CORE version: $E1039_CORE_VERSION"
@@ -31,6 +32,8 @@ while getopts ":v:V:osdle:" OPT ; do
         s ) DECO_MODE=std
             echo "  Decoder mode: $DECO_MODE"
             ;;
+        x ) (( DECO_VERB++ ))
+            ;;
         d ) DECO_MODE=devel
             echo "  Decoder mode: $DECO_MODE"
             ;;
@@ -43,6 +46,7 @@ while getopts ":v:V:osdle:" OPT ; do
     esac
 done
 shift $((OPTIND - 1))
+echo "  Decoder verbosity: $DECO_VERB"
 
 DIR_SCRIPT=$(dirname $(readlink -f $0))
 source $DIR_SCRIPT/../setup.sh
@@ -55,9 +59,10 @@ source $DIR_SCRIPT/../setup.sh
 
 umask 0002
 export E1039_DECODER_MODE=$DECO_MODE
+export E1039_DECODER_VERBOSITY=$DECO_VERB
 
 if [ $LAUNCHER = yes ] ; then
-    FN_LOG=/dev/shm/log-decoder-daemon.txt
+    FN_LOG=/data4/e1039_data/online/decoder_maindaq/log_decoder_daemon.txt
     echo "Launch a daemon process."
     echo "  Log file = $FN_LOG"
     root.exe -b -q "$E1039_ONLMON/work/Daemon4MainDaq.C" &>$FN_LOG
@@ -68,8 +73,8 @@ else
     fi
     RUN=$1
     echo "Single-run decoding for run = $RUN."
-    mkdir -p /dev/shm/decoder_maindaq
-    FN_LOG=$(printf '/dev/shm/decoder_maindaq/log_%06d.txt' $RUN)
+    mkdir -p /data4/e1039_data/online/decoder_maindaq
+    FN_LOG=$(printf '/data4/e1039_data/online/decoder_maindaq/log_%06d.txt' $RUN)
     if [ -e $FN_LOG ] ; then
 	for (( II = 1 ;  ; II++ )) ; do
 	    test ! -e $FN_LOG.$II && mv $FN_LOG $FN_LOG.$II && break

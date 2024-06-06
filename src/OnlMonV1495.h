@@ -10,6 +10,8 @@ class OnlMonV1495: public OnlMonClient {
  private:
   HodoType_t m_type;
   int m_lvl;
+
+  unsigned short m_trig_mask;
   std::string list_det_name[N_DET];
   int         list_det_id  [N_DET];
 
