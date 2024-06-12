@@ -13,7 +13,7 @@ E1039_CORE_VERSION=default
 E1039_CORE_DIR=
 IS_ONLINE=false
 DECO_MODE=devel
-DECO_VERB=0
+DECO_VERB=2
 LAUNCHER=no
 N_EVT=0
 
@@ -33,6 +33,8 @@ while getopts ":v:V:osxdle:" OPT ; do
             echo "  Decoder mode: $DECO_MODE"
             ;;
         x ) (( DECO_VERB++ ))
+            ;;
+        X ) (( DECO_VERB-- ))
             ;;
         d ) DECO_MODE=devel
             echo "  Decoder mode: $DECO_MODE"

@@ -75,7 +75,7 @@ void OnlMonServer::StartServer()
   pthread_t ThreadId = 0;
   if (!ServerThread)
     {
-      if (Verbosity() > 2) cout << "  Creating server thread." << endl;
+      if (Verbosity() > 1) cout << "  Creating server thread." << endl;
 #ifdef SERVER
       ServerThread = pthread_create(&ThreadId, NULL, FuncServer, this);
       SetThreadId(ThreadId);
@@ -174,7 +174,7 @@ void* OnlMonServer::FuncServer(void* arg)
   se->SetServerReady(true);
 
  again:
-  if (se->Verbosity() >= 0) cout << "OnlMonServer::WaitForConnection():" << endl;
+  if (se->Verbosity() > 1) cout << "OnlMonServer::WaitForConnection():" << endl;
   TSocket *s0 = ss->Accept();
   if (!s0) {
     cout << "Server socket " << port << " in use, either go to a different node or change the port and recompile server and client.  Abort." << endl;
@@ -184,13 +184,13 @@ void* OnlMonServer::FuncServer(void* arg)
   // to outgoing buffer and updating by other thread do not
   // go well together
   TInetAddress adr = s0->GetInetAddress();
-  if (se->Verbosity() >= 0) {
+  if (se->Verbosity() > 1) {
     cout << "Connection from " << adr.GetHostName() << "/" << adr.GetHostAddress() << ":" << adr.GetPort() << endl;
   }
   UInt_t ip0 = adr.GetAddress();
   if ((ip0 >> 16) == (192 << 8) + 168 || ip0 == (127 << 24) + 1) {
     se->HandleConnection(s0);
-  } else {
+  } else if (se->Verbosity() > 1) {
     cout << "OnlMonServer::FuncServer():  Ignore a connection from WAN.\n  ";
     adr.Print();
   }
@@ -215,14 +215,14 @@ void OnlMonServer::HandleConnection(TSocket* sock)
   */
   TMessage *mess = NULL;
   while (1) {
-    if (Verbosity() > 2) cout << "OnlMonServer::HandleConnection(): while loop." << endl;
+    if (Verbosity() > 1) cout << "OnlMonServer::HandleConnection(): while loop." << endl;
     sock->Recv(mess);
     if (! mess) {
-      if (Verbosity() > 2) cout << "  Broken Connection, closing socket." << endl;
+      if (Verbosity() > 1) cout << "  Broken Connection, closing socket." << endl;
       break;
     }
     if (m_go_end) {
-      if (Verbosity() > 2) cout << "  Already going to end, closing socket." << endl;
+      if (Verbosity() > 1) cout << "  Already going to end, closing socket." << endl;
       break;
     }
     
@@ -232,7 +232,7 @@ void OnlMonServer::HandleConnection(TSocket* sock)
       string msg_str = msg_str_c;
       delete mess;
       mess = 0;
-      if (Verbosity() > 2) cout << "  Received message: " << msg_str << endl;
+      if (Verbosity() > 1) cout << "  Received message: " << msg_str << endl;
       
       if (msg_str == "Finished") {
         break;
@@ -247,10 +247,10 @@ void OnlMonServer::HandleConnection(TSocket* sock)
         }
         break;
       } else if (msg_str == "Ping") {
-        if (Verbosity() > 2) cout << "  Ping." << endl;
+        if (Verbosity() > 1) cout << "  Ping." << endl;
         sock->Send("Pong");
       } else if (msg_str == "Spill") {
-        if (Verbosity() > 2) cout << "  Spill." << endl;
+        if (Verbosity() > 1) cout << "  Spill." << endl;
         int id_min, id_max;
         OnlMonComm* comm = OnlMonComm::instance();
         comm->FindFullSpillRange(id_min, id_max);
@@ -262,23 +262,21 @@ void OnlMonServer::HandleConnection(TSocket* sock)
         string name_subsys;
         int sp_min, sp_max;
         iss >> name_subsys >> sp_min >> sp_max;
-        cout << "  Subsystem " << name_subsys << endl;
+        if (Verbosity() > 1) cout << "  Subsystem " << name_subsys << endl;
         SubsysReco* sub = getSubsysReco(name_subsys);
         if (! sub) {
-          cout << " ... Not available." << endl;
+          if (Verbosity() > 1) cout << " ... Not available." << endl;
           sock->Send("NotReady");
         } else {
           OnlMonClient* cli = dynamic_cast<OnlMonClient*>(sub);
           cli->SendHist(sock, sp_min, sp_max);
         }
       } else {
-        //if (Verbosity() > 2) 
-        cout << "  Unexpected string message (" << msg_str << ").  Ignore it." << endl;
+        if (Verbosity() > 0) cout << "  Unexpected string message (" << msg_str << ").  Ignore it." << endl;
         break;
       }
     } else {
-      cerr << "OnlMonServer::HandleConnection():  Unexpected message ("
-           << mess->What() << ").  Ignore it." << endl;
+      if (Verbosity() > 0) cerr << "OnlMonServer::HandleConnection():  Unexpected message (" << mess->What() << ").  Ignore it." << endl;
       delete mess;
       mess = 0;
       break;

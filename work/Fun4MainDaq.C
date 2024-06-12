@@ -10,6 +10,7 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
   gSystem->Umask(0002);
   const bool output_full_dst = false;
   const bool output_spill_dst = true;
+  const bool output_nim4_dst = true;
   const bool use_onlmon = true;
   const bool use_evt_disp = true;
 
@@ -38,7 +39,7 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
   gSystem->mkdir(UtilOnline::GetDstFileDir().c_str(), true);
 
   OnlMonServer* se = OnlMonServer::instance();
-  se->Verbosity(deco_verb);
+  //se->Verbosity(1);
   se->setRun(run_id); // This sets the `RUNNUMBER` flag.
   se->SetOnline(is_online);
 
@@ -102,6 +103,14 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
   if (output_full_dst) {
     Fun4AllDstOutputManager *om_dst = new Fun4AllDstOutputManager("DSTOUT", fn_out);
     se->registerOutputManager(om_dst);
+  }
+
+  if (output_nim4_dst) {
+    oss.str("");
+    oss << "/data4/e1039_data/online/dst/run_" << UtilOnline::Run6(run_id) << "_NIM4_spin.root";
+    auto om_nim4dst = new Fun4AllTriggerDstOutputManager("NIM4DSTOUT", oss.str());
+    om_nim4dst->SetTriggerMask(0,0,0,0,0, 0,0,0,1,0); // fpga1-5,nim1-5
+    se->registerOutputManager(om_nim4dst);
   }
 
   if (output_spill_dst) {

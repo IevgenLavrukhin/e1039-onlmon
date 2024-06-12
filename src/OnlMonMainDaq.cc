@@ -283,19 +283,19 @@ int OnlMonMainDaq::DrawMonitor()
       double r_t_bit  = h1_evt_qual->GetBinContent(5) / n_all;
       if (r_qie > 0.01) {
         can0->SetWorseStatus(OnlMonCanvas::WARN);
-        can0->AddMessage(TString::Format("No QIE info in %.0f of events.", 100*r_qie).Data());
+        can0->AddMessage(TString::Format("No QIE info in %.0f%% of events.", 100*r_qie).Data());
       }
       if (r_v1495 > 0.01) {
         can0->SetWorseStatus(OnlMonCanvas::WARN);
-        can0->AddMessage(TString::Format("No V1495-TDC info in %.0f of events.", 100*r_v1495).Data());
+        can0->AddMessage(TString::Format("No V1495-TDC info in %.0f%% of events.", 100*r_v1495).Data());
       }
       if (r_taiwan > 0.01) {
         can0->SetWorseStatus(OnlMonCanvas::WARN);
-        can0->AddMessage(TString::Format("No Taiwan-TDC info in %.0f of events.", 100*r_taiwan).Data());
+        can0->AddMessage(TString::Format("No Taiwan-TDC info in %.0f%% of events.", 100*r_taiwan).Data());
       }
       if (r_t_bit > 0.01) {
         can0->SetWorseStatus(OnlMonCanvas::WARN);
-        can0->AddMessage(TString::Format("No trigger-bit info in %.0f of events.", 100*r_t_bit).Data());
+        can0->AddMessage(TString::Format("No trigger-bit info in %.0f%% of events.", 100*r_t_bit).Data());
       }
     }
   }
@@ -495,15 +495,14 @@ int OnlMonMainDaq::DrawMonitor()
     leg->SetFillStyle(0);
     leg->Draw();
   }
-  for (int ih = 0; ih < 5; ih++) {
-    double time = EvalAverageOfFilledBins(h1[ih]);
-    if (time > 20) {
-      can2->SetWorseStatus(OnlMonCanvas::ERROR);
-      can2->AddMessage(TString::Format("Time to %s = %.1f > 20.", label_h1[ih], time).Data());
-    } else if (time > 10) {
-      can2->SetWorseStatus(OnlMonCanvas::WARN);
-      can2->AddMessage(TString::Format("Time to %s = %.1f > 10.", label_h1[ih], time).Data());
-    }
+  double time = 0;
+  for (int ih = 0; ih < 5; ih++) time += EvalAverageOfFilledBins(h1[ih]);
+  if (time > 70) {
+    can2->SetWorseStatus(OnlMonCanvas::ERROR);
+    can2->AddMessage(TString::Format("Time per spill = %.1f > 70.", time).Data());
+  } else if (time > 60) {
+    can2->SetWorseStatus(OnlMonCanvas::WARN);
+    can2->AddMessage(TString::Format("Time per spill = %.1f > 60.", time).Data());
   }
 
   return 0;
