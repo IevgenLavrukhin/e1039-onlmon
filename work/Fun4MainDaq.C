@@ -1,5 +1,6 @@
 /// Fun4MainDaq.C:  Fun4all macro to decode the MainDAQ data.
 //R__LOAD_LIBRARY(interface_main)
+R__LOAD_LIBRARY(calibrator)
 R__LOAD_LIBRARY(decoder_maindaq)
 R__LOAD_LIBRARY(OnlMon)
 R__LOAD_LIBRARY(pheve_modules)
@@ -53,7 +54,7 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
 
   se->registerSubsystem(new DbUpRun());
   se->registerSubsystem(new DbUpSpill());
-  //se->registerSubsystem(new CalibHodoInTime());
+  se->registerSubsystem(new CalibHodoInTime()); // Enabled on 2024-06-13.
   se->registerSubsystem(new CalibMergeH4());
   //se->registerSubsystem(new CalibDriftDist());
 
@@ -63,8 +64,8 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
     se->registerSubsystem(new OnlMonMainDaq());
     se->registerSubsystem(new OnlMonTrigSig());
     se->registerSubsystem(new OnlMonTrigNim());
-    se->registerSubsystem(new OnlMonTrigV1495("rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
-    se->registerSubsystem(new OnlMonTrigEP   ("rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
+    se->registerSubsystem(new OnlMonTrigV1495()); // "rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
+    se->registerSubsystem(new OnlMonTrigEP   ()); // "rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
     se->registerSubsystem(new OnlMonQie());
     se->registerSubsystem(new OnlMonV1495(OnlMonV1495::H1X, 1));
     se->registerSubsystem(new OnlMonV1495(OnlMonV1495::H2X, 1));
@@ -96,8 +97,12 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
     se->registerSubsystem(new OnlMonProp (OnlMonProp::P2));
 
     auto ext_hodo_in_time = new ExtractHodoInTime();
-    ext_hodo_in_time->SetOutputDir("/data4/e1039_data/online/intime", run_id);
+    ext_hodo_in_time->SetOutputDir("/data4/e1039_data/online/intime_hodo", run_id);
     se->registerSubsystem(ext_hodo_in_time);
+
+    auto ext_v1495_in_time = new ExtractV1495InTime();
+    ext_v1495_in_time->SetOutputDir("/data4/e1039_data/online/intime_v1495", run_id);
+    se->registerSubsystem(ext_v1495_in_time);
   }
 
   if (output_full_dst) {

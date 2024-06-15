@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cstring>
+#include <unordered_set>
 #include <TSystem.h>
 #include <TH1D.h>
 #include <TH2D.h>
@@ -16,19 +17,20 @@
 #include <geom_svc/GeomSvc.h>
 #include <UtilAna/UtilSQHit.h>
 #include <UtilAna/UtilHist.h>
-#include <rs_Reader/rs_Reader.h>
+//#include <rs_Reader/rs_Reader.h>
 #include "OnlMonTrigEP.h"
 using namespace std;
 
 //Arguments = name of road set .txt files
-OnlMonTrigEP::OnlMonTrigEP(const std::string rs_top_0, const std::string rs_top_1, const std::string rs_bot_0, const std::string rs_bot_1, const std::string rs_path)
-  : rs_top_0_(rs_top_0)
-  , rs_top_1_(rs_top_1)
-  , rs_bot_0_(rs_bot_0)
-  , rs_bot_1_(rs_bot_1)
-  , rs_path_ (rs_path)
-  , top   (0) // should be const?
-  , bottom(1) // should be const?
+//OnlMonTrigEP::OnlMonTrigEP(const std::string rs_top_0, const std::string rs_top_1, const std::string rs_bot_0, const std::string rs_bot_1, const std::string rs_path)
+//  : rs_top_0_(rs_top_0)
+//  , rs_top_1_(rs_top_1)
+//  , rs_bot_0_(rs_bot_0)
+//  , rs_bot_1_(rs_bot_1)
+//  , rs_path_ (rs_path)
+//  , top   (0) // should be const?
+//  , bottom(1) // should be const?
+OnlMonTrigEP::OnlMonTrigEP()
 {
   NumCanvases(1);
   Name("OnlMonTrigEP" ); 
@@ -44,21 +46,21 @@ OnlMonTrigEP::OnlMonTrigEP(const std::string rs_top_0, const std::string rs_top_
   rs_bot_check_e[0] = 0;
   rs_bot_check_e[1] = 0;
 
-  is_rs_t[0] = rs_top_0 != "";
-  is_rs_t[1] = rs_top_1 != "";
-  is_rs_b[0] = rs_bot_0 != "";
-  is_rs_b[1] = rs_bot_1 != "";
+  //is_rs_t[0] = rs_top_0 != "";
+  //is_rs_t[1] = rs_top_1 != "";
+  //is_rs_b[0] = rs_bot_0 != "";
+  //is_rs_b[1] = rs_bot_1 != "";
 
-  if (rs_path_ == "") {
-    rs_path_ = gSystem->Getenv("E1039_RESOURCE");
-    rs_path_ += "/trigger/rs";
-  }
+  //if (rs_path_ == "") {
+  //  rs_path_ = gSystem->Getenv("E1039_RESOURCE");
+  //  rs_path_ += "/trigger/rs";
+  //}
 
   //calling rs_Reader class for each road set file
-  if(is_rs_t[0]) rs_top[0] = new rs_Reader( rs_path_+"/"+rs_top_0_ );
-  if(is_rs_t[1]) rs_top[1] = new rs_Reader( rs_path_+"/"+rs_top_1_ );
-  if(is_rs_b[0]) rs_bot[0] = new rs_Reader( rs_path_+"/"+rs_bot_0_ );
-  if(is_rs_b[1]) rs_bot[1] = new rs_Reader( rs_path_+"/"+rs_bot_1_ );
+  //if(is_rs_t[0]) rs_top[0] = new rs_Reader( rs_path_+"/"+rs_top_0_ );
+  //if(is_rs_t[1]) rs_top[1] = new rs_Reader( rs_path_+"/"+rs_top_1_ );
+  //if(is_rs_b[0]) rs_bot[0] = new rs_Reader( rs_path_+"/"+rs_bot_0_ );
+  //if(is_rs_b[1]) rs_bot[1] = new rs_Reader( rs_path_+"/"+rs_bot_1_ );
 }
 
 int OnlMonTrigEP::InitOnlMon(PHCompositeNode* topNode)
@@ -69,6 +71,19 @@ int OnlMonTrigEP::InitOnlMon(PHCompositeNode* topNode)
 int OnlMonTrigEP::InitRunOnlMon(PHCompositeNode* topNode)
 {
   SetDet();
+
+  SQRun* sq_run = findNode::getClass<SQRun>(topNode, "SQRun");
+  if (!sq_run) return Fun4AllReturnCodes::ABORTEVENT;
+  int LBtop = sq_run->get_v1495_id(2);
+  int LBbot = sq_run->get_v1495_id(3);
+  int ret = roadset.LoadConfig(LBtop, LBbot);
+  if (Verbosity() >= 0) {
+    cout << "OnlMonTrigEP: LoadConfig(" << LBtop << ", " << LBbot << ")\n"
+         << roadset << endl;
+  }
+  if (ret != 0) {
+    cout << "!!WARNING!!  OnlMonTrigEP::InitRunOnlMon():  roadset.LoadConfig returned " << ret << ".\n";
+  }
 
   GeomSvc* geom = GeomSvc::instance();
   ostringstream oss;
@@ -102,16 +117,16 @@ int OnlMonTrigEP::InitRunOnlMon(PHCompositeNode* topNode)
   RegisterHist(h1_purity);
 
   oss.str("");
-  oss << "h1_eff_NIM4_" << 0;
-  h1_eff_NIM4 = new TH1D(oss.str().c_str(), "", 2, -0.5, 1.5);
+  oss << "h1_eff_NIM3_" << 0;
+  h1_eff_NIM3 = new TH1D(oss.str().c_str(), "", 2, -0.5, 1.5);
   oss.str("");
-  oss << "FPGA1 Efficiency (NIM4 + Event type)" << ";;Hit count";
-  h1_eff_NIM4->SetTitle(oss.str().c_str());
+  oss << "FPGA1 Efficiency (NIM3 + Event type)" << ";;Hit count";
+  h1_eff_NIM3->SetTitle(oss.str().c_str());
   
-  h1_eff_NIM4->GetXaxis()->SetBinLabel( 2, "NIM4 && rd hit && FPGA1");
-  h1_eff_NIM4->GetXaxis()->SetBinLabel( 1, "NIM4 && rd hit && NO FPGA1");
+  h1_eff_NIM3->GetXaxis()->SetBinLabel( 2, "NIM3 && rd hit && FPGA1");
+  h1_eff_NIM3->GetXaxis()->SetBinLabel( 1, "NIM3 && rd hit && NO FPGA1");
   
-  RegisterHist(h1_eff_NIM4);
+  RegisterHist(h1_eff_NIM3);
  
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -142,18 +157,16 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
   for(auto it = vec1->begin(); it != vec1->end(); it++){
     double tdc_time = (*it)->get_tdc_time();
   //  int element = (*it)->get_element_id();       
-
     //Determining RF buckets for road set timing constraints 
     if(is_FPGA1){
       if(count == 3){
-        RF_edge_low[top] = tdc_time;
+        RF_edge_low[TOP] = tdc_time;
       }else if(count == 4){
-        RF_edge_up[top] = tdc_time;
+        RF_edge_up[TOP] = tdc_time;
       }else if(count == 11){
-        RF_edge_low[bottom] = tdc_time;
+        RF_edge_low[BOTTOM] = tdc_time;
       }else if(count == 12){
-        RF_edge_up[bottom] = tdc_time;
-      }else{
+        RF_edge_up[BOTTOM] = tdc_time;
       }
     }
     count ++;
@@ -170,66 +183,83 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
   vecH3B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[5]);
   vecH4B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[7]);
 
-//Checking for FPGA1 road hits on NIM4 TS triggers 
-  if(evt->get_trigger(SQEvent::NIM4)){
-    for(int j = 0; j < 2; j++){
-        if(is_rs_t[j]){
-          int z = RoadCheck(vecH1T,vecH2T,vecH3T,vecH4T,rs_top[j],top);
-          if(z > 0){
-            rs_top_check_e[j] = 1;
-          }
-        }
-
-        if(is_rs_b[j]){
-          int l = RoadCheck(vecH1B,vecH2B,vecH3B,vecH4B,rs_bot[j],bottom);
-          if(l > 0){
-            rs_bot_check_e[j] = 1;
-          }
-        }
-    }
-    
-    if(rs_top_check_e[0] || rs_bot_check_e[0] || rs_top_check_e[1] || rs_bot_check_e[1]){
-      //Filling histogram for FPGA1 efficiency
-      if(is_FPGA1){
-        h1_eff_NIM4->Fill(1);
-      }else{
-        h1_eff_NIM4->Fill(0);
-      }       
-    }
+  vector<int> roads_pos_top_f;
+  vector<int> roads_pos_bot_f;
+  vector<int> roads_neg_top_f;
+  vector<int> roads_neg_bot_f;
+  FindFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.PosTop(), roads_pos_top_f);
+  FindFiredRoads(BOTTOM, vecH1B, vecH2B, vecH3B, vecH4B, roadset.PosBot(), roads_pos_bot_f);
+  FindFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.NegTop(), roads_neg_top_f);
+  FindFiredRoads(BOTTOM, vecH1B, vecH2B, vecH3B, vecH4B, roadset.NegBot(), roads_neg_bot_f);
+  bool emu_fpga1 = (roads_pos_top_f.size() > 0 && roads_neg_bot_f.size() > 0) ||
+                   (roads_pos_bot_f.size() > 0 && roads_neg_top_f.size() > 0);
+  if (emu_fpga1 && evt->get_trigger(SQEvent::NIM3)){
+      if (is_FPGA1) h1_eff_NIM3->Fill(1);
+      else          h1_eff_NIM3->Fill(0);
   }
+  if (is_FPGA1) {
+    if (emu_fpga1) h1_purity->Fill(1);
+    else           h1_purity->Fill(0);
+  }
+
+  //Checking for FPGA1 road hits on NIM3 TS triggers 
+  //if(evt->get_trigger(SQEvent::NIM3)){
+    //for(int j = 0; j < 2; j++){
+    //    if(is_rs_t[j]){
+    //      int z = RoadCheck(vecH1T,vecH2T,vecH3T,vecH4T,rs_top[j], TOP);
+    //      if(z > 0){
+    //        rs_top_check_e[j] = 1;
+    //      }
+    //    }
+    //
+    //    if(is_rs_b[j]){
+    //      int l = RoadCheck(vecH1B,vecH2B,vecH3B,vecH4B,rs_bot[j], BOTTOM);
+    //      if(l > 0){
+    //        rs_bot_check_e[j] = 1;
+    //      }
+    //    }
+    //}
+    //
+    //if(rs_top_check_e[0] || rs_bot_check_e[0] || rs_top_check_e[1] || rs_bot_check_e[1]){
+    //  //Filling histogram for FPGA1 efficiency
+    //  if(is_FPGA1){
+    //    h1_eff_NIM3->Fill(1);
+    //  }else{
+    //    h1_eff_NIM3->Fill(0);
+    //  }       
+    //}
+  //}
+
 //Checking for road hits in FPGA1 events   
-  if(is_FPGA1){
-    for(int j = 0; j < 2; j++){
-      if(is_rs_t[j]){
-        int y = RoadCheck(vecH1T,vecH2T,vecH3T,vecH4T,rs_top[j],top);
-        if(y > 0){
-          rs_top_check_p[j] = 1;
-        }
-      }
-      
-      if(is_rs_b[j]){
-        int x = RoadCheck(vecH1B,vecH2B,vecH3B,vecH4B,rs_bot[j],bottom);
-        if(x > 0){
-          rs_bot_check_p[j] = 1;
-        }
-      }
-    } 
-    
-    if(rs_top_check_p[0] || rs_bot_check_p[0] || rs_top_check_p[1] || rs_bot_check_p[1]){
-      //Filling histogram for FPGA1 purity    
-      h1_purity->Fill(1);
-   /* }else if((vecH2T->size() > 0) && (vecH4B->size() > 0)){
-      h1_purity->Fill(1);
-    }else if((vecH2B->size() > 0) && (vecH4T->size() > 0)){
-      h1_purity->Fill(1);*/
-    }else{
-      h1_purity->Fill(0);
-     // debug_print(DEBUG_LVL);
-
-    }
-    
-  } 
-
+//  if(is_FPGA1){
+//    for(int j = 0; j < 2; j++){
+//      if(is_rs_t[j]){
+//        int y = RoadCheck(vecH1T,vecH2T,vecH3T,vecH4T,rs_top[j], TOP);
+//        if(y > 0){
+//          rs_top_check_p[j] = 1;
+//        }
+//      }
+//      
+//      if(is_rs_b[j]){
+//        int x = RoadCheck(vecH1B,vecH2B,vecH3B,vecH4B,rs_bot[j], BOTTOM);
+//        if(x > 0){
+//          rs_bot_check_p[j] = 1;
+//        }
+//      }
+//    } 
+//    
+//    if(rs_top_check_p[0] || rs_bot_check_p[0] || rs_top_check_p[1] || rs_bot_check_p[1]){
+//      //Filling histogram for FPGA1 purity    
+//      h1_purity->Fill(1);
+//   /* }else if((vecH2T->size() > 0) && (vecH4B->size() > 0)){
+//      h1_purity->Fill(1);
+//    }else if((vecH2B->size() > 0) && (vecH4T->size() > 0)){
+//      h1_purity->Fill(1);*/
+//    }else{
+//      h1_purity->Fill(0);
+//     // debug_print(DEBUG_LVL);
+//    }
+//  } 
  
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -250,9 +280,9 @@ int OnlMonTrigEP::FindAllMonHist()
   if (! h1_purity) return 1;
 
   oss.str("");
-  oss << "h1_eff_NIM4_" << 0;
-  h1_eff_NIM4 = FindMonHist(oss.str().c_str());
-  if (! h1_eff_NIM4) return 1;
+  oss << "h1_eff_NIM3_" << 0;
+  h1_eff_NIM3 = FindMonHist(oss.str().c_str());
+  if (! h1_eff_NIM3) return 1;
 
   return 0;
 }
@@ -277,12 +307,12 @@ int OnlMonTrigEP::DrawMonitor()
   text->SetTextAlign(22);
   text->DrawText(0.3, 0.5, oss.str().c_str());
   
-  double eff_NIM4 = h1_eff_NIM4->GetMean();
+  double eff_NIM3 = h1_eff_NIM3->GetMean();
   ostringstream oss0; 
   TVirtualPad* pad01 = pad0->cd(2);
   pad01->SetGrid();
-  h1_eff_NIM4->Draw();
-  oss0 << "Efficiency = " << eff_NIM4;
+  h1_eff_NIM3->Draw();
+  oss0 << "Efficiency = " << eff_NIM3;
   TText* text0 = new TText();
   text0->SetNDC(true);
   text0->SetTextAlign(22);
@@ -308,106 +338,143 @@ void OnlMonTrigEP::SetDet()
   }
 }
 
-int OnlMonTrigEP::RoadCheck(vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X,rs_Reader* rs_obj, int top0_or_bot1)
+void OnlMonTrigEP::FindFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<int> list_fired_roads)
 {
-  //Returns 1 if a road on one of the road sets was hit 
-  int count_rd = 0;
-
-  int H_not_neg[4];
-  int hod_hits[4] = {0,0,0,0}; 
-  int rd_hits = 1; 
-  
-  //First loop through road indices
-  for(size_t i=0; i<rs_obj->roads.size();i++){
-  
-    H_not_neg[0] = (rs_obj->roads[i].H1X != -1) ? 1 : 0;  
-    H_not_neg[1] = (rs_obj->roads[i].H2X != -1) ? 1 : 0;
-    H_not_neg[2] = (rs_obj->roads[i].H3X != -1) ? 1 : 0;   
-    H_not_neg[3] = (rs_obj->roads[i].H4X != -1) ? 1 : 0;
-    
-    //Loop through H1X hits and compare with road index to find matches
-    if(H_not_neg[0] && H1X->size() > 0){
-      for (auto it = H1X->begin(); it != H1X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH1X  = (*it)->get_element_id();
-        double timeH1X = (*it)->get_tdc_time();
-        if((eleH1X == rs_obj->roads[i].H1X) && (timeH1X > RF_edge_low[top0_or_bot1]) && (timeH1X < RF_edge_up[top0_or_bot1])){
-          hod_hits[0] = 1;
-          break;
-        }
-      }
-   
-    }else{
-      hod_hits[0]=0;
-    }
-
-    //Loop through H2X hits and compare with road index to find matches
-    if(H_not_neg[1] && H2X->size() > 0){
-      for (auto it = H2X->begin(); it != H2X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH2X  = (*it)->get_element_id();
-        double timeH2X = (*it)->get_tdc_time();
-        if((eleH2X == rs_obj->roads[i].H2X) && (timeH2X > RF_edge_low[top0_or_bot1]) && (timeH2X < RF_edge_up[top0_or_bot1])){
-          hod_hits[1] = 1;  
-          break;
-        }
-      }
-    }else{
-      hod_hits[1]=0;
-    }
-    
-    //Loop through H3X hits and compare with road index to find matches   
-    if(H_not_neg[2] && H3X->size() > 0){
-      for (auto it = H3X->begin(); it != H3X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH3X  = (*it)->get_element_id();
-        double timeH3X = (*it)->get_tdc_time();
-        if((eleH3X == rs_obj->roads[i].H3X) && (timeH3X > RF_edge_low[top0_or_bot1]) && (timeH3X < RF_edge_up[top0_or_bot1])){
-          hod_hits[2] = 1;  
-          break;
-        }   
-      }
-    }else{
-      hod_hits[2] = 0;
-
-    }
-
-    //Loop through H4X hits and compare with road index to find matches
-    if(H_not_neg[3] && H4X->size() > 0){
-      for (auto it = H4X->begin(); it != H4X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH4X  = (*it)->get_element_id();
-        double timeH4X = (*it)->get_tdc_time();
-        if((eleH4X == rs_obj->roads[i].H4X) && (timeH4X > RF_edge_low[top0_or_bot1]) && (timeH4X < RF_edge_up[top0_or_bot1])){
-          hod_hits[3] = 1;  
-          break;
-        }   
-      }
-    }else{
-      hod_hits[3] = 0;
-
-    }
-   
-    //Checks if hodoscope hits constitute a road hit 
-    rd_hits = 1;
-    for(int j = 0; j < 4; j++){
-      if(H_not_neg[j]){// && hod_hits[j] > 0){
-        rd_hits *= hod_hits[j];
-      }
-      hod_hits[j] = 0;
-    }
-
-            
-
-    if(rd_hits != 0){   
-      count_rd++;     
-      //returns 1 if there were any road hits and 0 otherwise
-      return 1;
-    }
+  unordered_set<int> set_ele1;
+  unordered_set<int> set_ele2;
+  unordered_set<int> set_ele3;
+  unordered_set<int> set_ele4;
+  for (auto it = H1X->begin(); it != H1X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele1.insert(ele);
   }
-  
-  return 0;  
+  for (auto it = H2X->begin(); it != H2X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele2.insert(ele);
+  }
+  for (auto it = H3X->begin(); it != H3X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele3.insert(ele);
+  }
+  for (auto it = H4X->begin(); it != H4X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele4.insert(ele);
+  }
+
+  list_fired_roads.clear();
+  for (unsigned int ir = 0 ; ir < roads->GetNumRoads(); ir++) {
+    TriggerRoad1* road = roads->GetRoad(ir);
+    if (set_ele1.find(road->H1X) != set_ele1.end() &&
+        set_ele2.find(road->H2X) != set_ele2.end() &&
+        set_ele3.find(road->H3X) != set_ele3.end() &&
+        set_ele4.find(road->H4X) != set_ele4.end()   ) list_fired_roads.push_back(road->road_id);
+  }
 }
+
+//int OnlMonTrigEP::RoadCheck(vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X,rs_Reader* rs_obj, int top0_or_bot1)
+//{
+//  //Returns 1 if a road on one of the road sets was hit 
+//  int count_rd = 0;
+//
+//  int H_not_neg[4];
+//  int hod_hits[4] = {0,0,0,0}; 
+//  int rd_hits = 1; 
+//  
+//  //First loop through road indices
+//  for(size_t i=0; i<rs_obj->roads.size();i++){
+//  
+//    H_not_neg[0] = (rs_obj->roads[i].H1X != -1) ? 1 : 0;  
+//    H_not_neg[1] = (rs_obj->roads[i].H2X != -1) ? 1 : 0;
+//    H_not_neg[2] = (rs_obj->roads[i].H3X != -1) ? 1 : 0;   
+//    H_not_neg[3] = (rs_obj->roads[i].H4X != -1) ? 1 : 0;
+//    
+//    //Loop through H1X hits and compare with road index to find matches
+//    if(H_not_neg[0] && H1X->size() > 0){
+//      for (auto it = H1X->begin(); it != H1X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH1X  = (*it)->get_element_id();
+//        double timeH1X = (*it)->get_tdc_time();
+//        if((eleH1X == rs_obj->roads[i].H1X) && (timeH1X > RF_edge_low[top0_or_bot1]) && (timeH1X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[0] = 1;
+//          break;
+//        }
+//      }
+//   
+//    }else{
+//      hod_hits[0]=0;
+//    }
+//
+//    //Loop through H2X hits and compare with road index to find matches
+//    if(H_not_neg[1] && H2X->size() > 0){
+//      for (auto it = H2X->begin(); it != H2X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH2X  = (*it)->get_element_id();
+//        double timeH2X = (*it)->get_tdc_time();
+//        if((eleH2X == rs_obj->roads[i].H2X) && (timeH2X > RF_edge_low[top0_or_bot1]) && (timeH2X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[1] = 1;  
+//          break;
+//        }
+//      }
+//    }else{
+//      hod_hits[1]=0;
+//    }
+//    
+//    //Loop through H3X hits and compare with road index to find matches   
+//    if(H_not_neg[2] && H3X->size() > 0){
+//      for (auto it = H3X->begin(); it != H3X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH3X  = (*it)->get_element_id();
+//        double timeH3X = (*it)->get_tdc_time();
+//        if((eleH3X == rs_obj->roads[i].H3X) && (timeH3X > RF_edge_low[top0_or_bot1]) && (timeH3X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[2] = 1;  
+//          break;
+//        }   
+//      }
+//    }else{
+//      hod_hits[2] = 0;
+//
+//    }
+//
+//    //Loop through H4X hits and compare with road index to find matches
+//    if(H_not_neg[3] && H4X->size() > 0){
+//      for (auto it = H4X->begin(); it != H4X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH4X  = (*it)->get_element_id();
+//        double timeH4X = (*it)->get_tdc_time();
+//        if((eleH4X == rs_obj->roads[i].H4X) && (timeH4X > RF_edge_low[top0_or_bot1]) && (timeH4X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[3] = 1;  
+//          break;
+//        }   
+//      }
+//    }else{
+//      hod_hits[3] = 0;
+//
+//    }
+//   
+//    //Checks if hodoscope hits constitute a road hit 
+//    rd_hits = 1;
+//    for(int j = 0; j < 4; j++){
+//      if(H_not_neg[j]){// && hod_hits[j] > 0){
+//        rd_hits *= hod_hits[j];
+//      }
+//      hod_hits[j] = 0;
+//    }
+//
+//            
+//
+//    if(rd_hits != 0){   
+//      count_rd++;     
+//      //returns 1 if there were any road hits and 0 otherwise
+//      return 1;
+//    }
+//  }
+//  
+//  return 0;  
+//}
 
 void OnlMonTrigEP:: debug_print(int debug_lvl){
   //debug function

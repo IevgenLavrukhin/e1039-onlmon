@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cstring>
+#include <unordered_set>
 #include <TSystem.h>
 #include <TH1D.h>
 #include <TH2D.h>
@@ -16,39 +17,40 @@
 #include <geom_svc/GeomSvc.h>
 #include <UtilAna/UtilSQHit.h>
 #include <UtilAna/UtilHist.h>
-#include <rs_Reader/rs_Reader.h>
+//#include <rs_Reader/rs_Reader.h>
 #include "OnlMonTrigV1495.h"
 using namespace std;
 
 //Arguments = name of road set .txt files
-OnlMonTrigV1495::OnlMonTrigV1495(const std::string rs_top_0, const std::string rs_top_1, const std::string rs_bot_0, const std::string rs_bot_1, const std::string rs_path)
-  : rs_top_0_(rs_top_0)
-  , rs_top_1_(rs_top_1)
-  , rs_bot_0_(rs_bot_0)
-  , rs_bot_1_(rs_bot_1)
-  , rs_path_ (rs_path)
-  , top   (0) // should be const?
-  , bottom(1) // should be const?
+//OnlMonTrigV1495::OnlMonTrigV1495(const std::string rs_top_0, const std::string rs_top_1, const std::string rs_bot_0, const std::string rs_bot_1, const std::string rs_path)
+//  : rs_top_0_(rs_top_0)
+//  , rs_top_1_(rs_top_1)
+//  , rs_bot_0_(rs_bot_0)
+//  , rs_bot_1_(rs_bot_1)
+//  , rs_path_ (rs_path)
+//  , top   (0) // should be const?
+//  , bottom(1) // should be const?
+OnlMonTrigV1495::OnlMonTrigV1495()
 {
   NumCanvases(4);
   Name("OnlMonTrigV1495" ); 
   Title("V1495 Trigger Analysis" );
 
-  is_rs_t[0] = rs_top_0 != "";
-  is_rs_t[1] = rs_top_1 != "";
-  is_rs_b[0] = rs_bot_0 != "";
-  is_rs_b[1] = rs_bot_1 != "";
- 
-  if (rs_path_ == "") {
-    rs_path_ = gSystem->Getenv("E1039_RESOURCE");
-    rs_path_ += "/trigger/rs";
-  }
+  //is_rs_t[0] = rs_top_0 != "";
+  //is_rs_t[1] = rs_top_1 != "";
+  //is_rs_b[0] = rs_bot_0 != "";
+  //is_rs_b[1] = rs_bot_1 != "";
+  //
+  //if (rs_path_ == "") {
+  //  rs_path_ = gSystem->Getenv("E1039_RESOURCE");
+  //  rs_path_ += "/trigger/rs";
+  //}
   
   //calling rs_Reader class for each road set file
-  if(is_rs_t[0]) rs_top[0] = new rs_Reader( rs_path_+"/"+rs_top_0_ );
-  if(is_rs_t[1]) rs_top[1] = new rs_Reader( rs_path_+"/"+rs_top_1_ );
-  if(is_rs_b[0]) rs_bot[0] = new rs_Reader( rs_path_+"/"+rs_bot_0_ );
-  if(is_rs_b[1]) rs_bot[1] = new rs_Reader( rs_path_+"/"+rs_bot_1_ );
+  //if(is_rs_t[0]) rs_top[0] = new rs_Reader( rs_path_+"/"+rs_top_0_ );
+  //if(is_rs_t[1]) rs_top[1] = new rs_Reader( rs_path_+"/"+rs_top_1_ );
+  //if(is_rs_b[0]) rs_bot[0] = new rs_Reader( rs_path_+"/"+rs_bot_0_ );
+  //if(is_rs_b[1]) rs_bot[1] = new rs_Reader( rs_path_+"/"+rs_bot_1_ );
 }
 
 int OnlMonTrigV1495::InitOnlMon(PHCompositeNode* topNode)
@@ -59,6 +61,15 @@ int OnlMonTrigV1495::InitOnlMon(PHCompositeNode* topNode)
 int OnlMonTrigV1495::InitRunOnlMon(PHCompositeNode* topNode)
 {
   SetDet();
+
+  SQRun* sq_run = findNode::getClass<SQRun>(topNode, "SQRun");
+  if (!sq_run) return Fun4AllReturnCodes::ABORTEVENT;
+  int LBtop = sq_run->get_v1495_id(2);
+  int LBbot = sq_run->get_v1495_id(3);
+  int ret = roadset.LoadConfig(LBtop, LBbot);
+  if (ret != 0) {
+    cout << "!!WARNING!!  OnlMonTrigEP::InitRunOnlMon():  roadset.LoadConfig returned " << ret << ".\n";
+  }
 
   GeomSvc* geom = GeomSvc::instance();
   ostringstream oss;
@@ -75,39 +86,72 @@ int OnlMonTrigV1495::InitRunOnlMon(PHCompositeNode* topNode)
            << det_id << " " << n_ele << " at name = " << name << "." << endl;
       return Fun4AllReturnCodes::ABORTEVENT;
     }
-
   }
-  int rs_hist_range;
-  for(int i = 0; i < 2; i++){ 
- 
-      rs_hist_range = (is_rs_t[i]) ? rs_top[i]->roads.size() : 100;
 
-      oss.str("");
-      oss << "h1_rs_top_" << i;
-      h1_rs_top[i] = new TH1D(oss.str().c_str(), "",rs_hist_range ,-0.5, rs_hist_range - 0.5);
-      oss.str("");
-      if(i == 0){
-        oss << rs_top_0_ << ";Road Index;Counts";
-      }else{
-        oss << rs_top_1_ << ";Road Index;Counts";
-      }
-      h1_rs_top[i]->SetTitle(oss.str().c_str());
-
-      rs_hist_range = (is_rs_b[i]) ? rs_bot[i]->roads.size() : 100;
-      oss.str("");
-      oss << "h1_rs_bot_" << i;
-      h1_rs_bot[i] = new TH1D(oss.str().c_str(), "", rs_hist_range,-0.5, rs_hist_range - 0.5);
-      oss.str("");
-      if(i == 0){
-        oss << rs_bot_0_ << ";Road Index;Counts";
-      }else{
-        oss << rs_bot_1_ << ";Road Index;Counts";
-      }
-      h1_rs_bot[i]->SetTitle(oss.str().c_str());
-
-      RegisterHist(h1_rs_top[i]);
-      RegisterHist(h1_rs_bot[i]);
+  unsigned int n_pos_top = roadset.PosTop()->GetNumRoads();
+  unsigned int n_pos_bot = roadset.PosBot()->GetNumRoads();
+  unsigned int n_neg_top = roadset.NegTop()->GetNumRoads();
+  unsigned int n_neg_bot = roadset.NegBot()->GetNumRoads();
+  h1_rs_cnt[0] = new TH1D("h1_rs_cnt_pos_top", "", n_pos_top, -0.5, n_pos_top-0.5);
+  h1_rs_cnt[1] = new TH1D("h1_rs_cnt_pos_bot", "", n_pos_bot, -0.5, n_pos_bot-0.5);
+  h1_rs_cnt[2] = new TH1D("h1_rs_cnt_neg_top", "", n_neg_top, -0.5, n_neg_top-0.5);
+  h1_rs_cnt[3] = new TH1D("h1_rs_cnt_neg_bot", "", n_neg_bot, -0.5, n_neg_bot-0.5);
+  h1_rs_cnt[0]->SetTitle(   "Positive Top;Road Index;Counts");
+  h1_rs_cnt[1]->SetTitle("Positive Bottom;Road Index;Counts");
+  h1_rs_cnt[2]->SetTitle(   "Negative Top;Road Index;Counts");
+  h1_rs_cnt[3]->SetTitle("Negative Bottom;Road Index;Counts");
+  //oss.str("");
+  //oss << "Roadset " << roadset.RoadsetID()
+  //    << ", LBTop " << roadset.LBTop() << ", LBBot " << roadset.LBBot()
+  //    << ";Road Index;Counts";
+  for (int i = 0; i < 4; i++) {
+    //h1_rs_cnt[i]->SetTitle(oss.str().c_str());
+    RegisterHist(h1_rs_cnt[i]);
   }
+
+  h1_cnt = new TH1D("h1_cnt", "", 20, 0.5, 20.5);
+  RegisterHist(h1_cnt); 
+
+  h1_cnt->SetBinContent(1, roadset.RoadsetID());
+  h1_cnt->SetBinContent(2, roadset.LBTop());
+  h1_cnt->SetBinContent(3, roadset.LBBot());
+  h1_cnt->SetBinContent(4, roadset.PosTop()->GetNumRoads());
+  h1_cnt->SetBinContent(5, roadset.PosBot()->GetNumRoads());
+  h1_cnt->SetBinContent(6, roadset.NegTop()->GetNumRoads());
+  h1_cnt->SetBinContent(7, roadset.NegBot()->GetNumRoads());
+
+  //int rs_hist_range;
+  //for(int i = 0; i < 2; i++){ 
+  //
+  //    rs_hist_range = (is_rs_t[i]) ? rs_top[i]->roads.size() : 100;
+  //
+  //    oss.str("");
+  //    oss << "h1_rs_top_" << i;
+  //    h1_rs_top[i] = new TH1D(oss.str().c_str(), "",rs_hist_range ,-0.5, rs_hist_range - 0.5);
+  //    oss.str("");
+  //    if(i == 0){
+  //      oss << rs_top_0_ << ";Road Index;Counts";
+  //    }else{
+  //      oss << rs_top_1_ << ";Road Index;Counts";
+  //    }
+  //    h1_rs_top[i]->SetTitle(oss.str().c_str());
+  //
+  //    rs_hist_range = (is_rs_b[i]) ? rs_bot[i]->roads.size() : 100;
+  //    oss.str("");
+  //    oss << "h1_rs_bot_" << i;
+  //    h1_rs_bot[i] = new TH1D(oss.str().c_str(), "", rs_hist_range,-0.5, rs_hist_range - 0.5);
+  //    oss.str("");
+  //    if(i == 0){
+  //      oss << rs_bot_0_ << ";Road Index;Counts";
+  //    }else{
+  //      oss << rs_bot_1_ << ";Road Index;Counts";
+  //    }
+  //    h1_rs_bot[i]->SetTitle(oss.str().c_str());
+  //
+  //    RegisterHist(h1_rs_top[i]);
+  //    RegisterHist(h1_rs_bot[i]);
+  //}
+
   const double DT = 40/9.0; // 4/9 ns per single count of Taiwan TDC
   const int NT    = 200;
   const double T0 = 100.5*DT;
@@ -167,7 +211,6 @@ int OnlMonTrigV1495::InitRunOnlMon(PHCompositeNode* topNode)
 
 int OnlMonTrigV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
 { 
-
   SQEvent*      evt     = findNode::getClass<SQEvent    >(topNode, "SQEvent");
   SQHitVector*  hit_vec = findNode::getClass<SQHitVector>(topNode, "SQHitVector");
   SQHitVector*  trig_hit_vec = findNode::getClass<SQHitVector>(topNode, "SQTriggerHitVector");
@@ -175,8 +218,7 @@ int OnlMonTrigV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
 
   //Determine whether event is FPGA1 
   int is_FPGA1 = (evt->get_trigger(SQEvent::MATRIX1)) ? 1 : 0; 
- 
- 
+  
 //RF *************************************************************************************** 
   auto vec1 = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, "RF");
   int count = 0;
@@ -188,14 +230,13 @@ int OnlMonTrigV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
     if(is_FPGA1){
       h2_RF->Fill(tdc_time,element);
       if(count == 3){
-        RF_edge_low[top] = tdc_time;
+        RF_edge_low[TOP] = tdc_time;
       }else if(count == 4){
-        RF_edge_up[top] = tdc_time;
+        RF_edge_up[TOP] = tdc_time;
       }else if(count == 11){
-        RF_edge_low[bottom] = tdc_time;
+        RF_edge_low[BOTTOM] = tdc_time;
       }else if(count == 12){
-        RF_edge_up[bottom] = tdc_time;
-      }else{
+        RF_edge_up[BOTTOM] = tdc_time;
       }
     }
     count ++;
@@ -231,20 +272,25 @@ int OnlMonTrigV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
    vecH2B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[3]);
    vecH3B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[5]);
    vecH4B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[7]);
+
+   CountFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.PosTop(), h1_rs_cnt[0]);
+   CountFiredRoads(BOTTOM, vecH1B, vecH2B, vecH3B, vecH4B, roadset.PosBot(), h1_rs_cnt[1]);
+   CountFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.NegTop(), h1_rs_cnt[2]);
+   CountFiredRoads(BOTTOM, vecH1B, vecH2B, vecH3B, vecH4B, roadset.NegBot(), h1_rs_cnt[3]);
        
    //debug_print(DEBUG_LVL);
-//TOP####
-   for(int j = 0; j < 2; j++){
-      if(is_rs_t[j]){
-        RoadHits(vecH1T,vecH2T,vecH3T,vecH4T,rs_top[j],h1_rs_top[j],top);
-      }
-    }
-//BOTTOM####
-   for(int j = 0; j < 2; j++){
-      if(is_rs_b[j]){
-        RoadHits(vecH1B,vecH2B,vecH3B,vecH4B,rs_bot[j],h1_rs_bot[j],bottom);
-      }
-    } 
+   //TOP####
+   //for(int j = 0; j < 2; j++){
+   //   if(is_rs_t[j]){
+   //     RoadHits(vecH1T,vecH2T,vecH3T,vecH4T,rs_top[j],h1_rs_top[j],top);
+   //   }
+   // }
+   ////BOTTOM####
+   //for(int j = 0; j < 2; j++){
+   //   if(is_rs_b[j]){
+   //     RoadHits(vecH1B,vecH2B,vecH3B,vecH4B,rs_bot[j],h1_rs_bot[j],bottom);
+   //   }
+   // } 
   }
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -265,18 +311,25 @@ int OnlMonTrigV1495::FindAllMonHist()
   h1_trig_diff_TS = FindMonHist(oss.str().c_str());
   if (! h1_trig_diff_TS) return 1; 
 
-  for(int i = 0; i < 2; i++){
-    oss.str("");
-    oss << "h1_rs_top_" << i;
-    h1_rs_top[i] = FindMonHist(oss.str().c_str());
-    if (! h1_rs_top[i]) return 1;
+  h1_rs_cnt[0] = FindMonHist("h1_rs_cnt_pos_top");
+  h1_rs_cnt[1] = FindMonHist("h1_rs_cnt_pos_bot");
+  h1_rs_cnt[2] = FindMonHist("h1_rs_cnt_neg_top");
+  h1_rs_cnt[3] = FindMonHist("h1_rs_cnt_neg_bot");
+  if (! h1_rs_cnt[0] || ! h1_rs_cnt[1] || ! h1_rs_cnt[1] || ! h1_rs_cnt[3]) return 1;
 
-    oss.str("");
-    oss << "h1_rs_bot_" << i;
-    h1_rs_bot[i] = FindMonHist(oss.str().c_str());
-    if (! h1_rs_bot[i]) return 1;
+  //for(int i = 0; i < 2; i++){
+  //  oss.str("");
+  //  oss << "h1_rs_top_" << i;
+  //  h1_rs_top[i] = FindMonHist(oss.str().c_str());
+  //  if (! h1_rs_top[i]) return 1;
+  //
+  //  oss.str("");
+  //  oss << "h1_rs_bot_" << i;
+  //  h1_rs_bot[i] = FindMonHist(oss.str().c_str());
+  //  if (! h1_rs_bot[i]) return 1;
+  //}
 
-  }
+  h1_cnt = FindMonHist("h1_cnt");
 
   oss.str("");
   oss << "h2_RF_" << 1;
@@ -304,6 +357,14 @@ int OnlMonTrigV1495::DrawMonitor()
   UtilHist::AutoSetRangeX(h2_fpga_nim_time_af); 
   UtilHist::AutoSetRangeY(h2_fpga_nim_time_af); 
   UtilHist::AutoSetRangeX(h2_RF);
+
+  int roadset_id = (int)h1_cnt->GetBinContent(1);
+  int LBTop      = (int)h1_cnt->GetBinContent(2);
+  int LBBot      = (int)h1_cnt->GetBinContent(3);
+  int n_pos_top  = (int)h1_cnt->GetBinContent(4);
+  int n_pos_bot  = (int)h1_cnt->GetBinContent(5);
+  int n_neg_top  = (int)h1_cnt->GetBinContent(6);
+  int n_neg_bot  = (int)h1_cnt->GetBinContent(7);
 
   OnlMonCanvas* can0 = GetCanvas(0);
   TPad* pad0 = can0->GetMainPad();
@@ -343,26 +404,37 @@ int OnlMonTrigV1495::DrawMonitor()
   pad2->Divide(1,2);
   TVirtualPad* pad20 = pad2->cd(1);
   pad20->SetGrid();
-  h1_rs_top[0]->SetLineColor(kBlue);
-  h1_rs_top[0]->Draw();
+  h1_rs_cnt[0]->SetLineColor(kBlue);
+  h1_rs_cnt[0]->Draw();
+  //h1_rs_top[0]->SetLineColor(kBlue);
+  //h1_rs_top[0]->Draw();
 
+  can2->AddMessage(TString::Format("Roadset %d, LBTop 0x%x, LBBot 0x%x", roadset_id, LBTop, LBBot).Data());
+  can2->AddMessage(TString::Format("N_{PosTop} %d, N_{PosBot} %d, N_{NegTop} %d, N_{NegBot} %d", n_pos_top, n_pos_bot, n_neg_top, n_neg_bot).Data());
+  
   TVirtualPad* pad21 = pad2->cd(2);
   pad21->SetGrid();
-  h1_rs_bot[0]->SetLineColor(kBlue);
-  h1_rs_bot[0]->Draw();
+  h1_rs_cnt[1]->SetLineColor(kBlue);
+  h1_rs_cnt[1]->Draw();
+  //h1_rs_bot[0]->SetLineColor(kBlue);
+  //h1_rs_bot[0]->Draw();
 
   OnlMonCanvas* can3 = GetCanvas(3);
   TPad* pad3 = can3->GetMainPad();
   pad3->Divide(1,2);
   TVirtualPad* pad30 = pad3->cd(1);
   pad30->SetGrid();
-  h1_rs_top[1]->SetLineColor(kBlue);
-  h1_rs_top[1]->Draw();
+  h1_rs_cnt[2]->SetLineColor(kBlue);
+  h1_rs_cnt[2]->Draw();
+  //h1_rs_top[1]->SetLineColor(kBlue);
+  //h1_rs_top[1]->Draw();
 
   TVirtualPad* pad31 = pad3->cd(2);
   pad31->SetGrid();
-  h1_rs_bot[1]->SetLineColor(kBlue);
-  h1_rs_bot[1]->Draw();
+  h1_rs_cnt[3]->SetLineColor(kBlue);
+  h1_rs_cnt[3]->Draw();
+  //h1_rs_bot[1]->SetLineColor(kBlue);
+  //h1_rs_bot[1]->Draw();
 
   return 0;
 }
@@ -384,104 +456,140 @@ void OnlMonTrigV1495::SetDet()
   }
 }
 
-void OnlMonTrigV1495::RoadHits(vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X,rs_Reader* rs_obj, TH1* hist_rs, int top0_or_bot1)
+void OnlMonTrigV1495::CountFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X, TriggerRoads* roads, TH1* h1_rs_cnt)
 {
-  //Fills histogram with number of road hits for each road index
-  int count_rd = 0;
-
-  int H_not_neg[4];
-  int hod_hits[4] = {0,0,0,0}; 
-  int rd_hits = 1; 
- 
-  // First loop through road indices
-  for(size_t i=0; i<rs_obj->roads.size();i++){
-  
-    H_not_neg[0] = (rs_obj->roads[i].H1X != -1) ? 1 : 0;  
-    H_not_neg[1] = (rs_obj->roads[i].H2X != -1) ? 1 : 0;
-    H_not_neg[2] = (rs_obj->roads[i].H3X != -1) ? 1 : 0;   
-    H_not_neg[3] = (rs_obj->roads[i].H4X != -1) ? 1 : 0;
-    
-    //Loop through H1X hits and compare with road index to find matches
-    if(H_not_neg[0] && H1X->size() > 0){
-      for (auto it = H1X->begin(); it != H1X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH1X  = (*it)->get_element_id();
-        double timeH1X = (*it)->get_tdc_time();
-        if((eleH1X == rs_obj->roads[i].H1X) && (timeH1X > RF_edge_low[top0_or_bot1]) && (timeH1X < RF_edge_up[top0_or_bot1])){
-          hod_hits[0] = 1;
-          break;
-        }
-      }
-   
-    }else{
-      hod_hits[0]=0;
-    }
-
-    //Loop through H2X hits and compare with road index to find matches 
-    if(H_not_neg[1] && H2X->size() > 0){
-      for (auto it = H2X->begin(); it != H2X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH2X  = (*it)->get_element_id();
-        double timeH2X = (*it)->get_tdc_time();
-        if((eleH2X == rs_obj->roads[i].H2X) && (timeH2X > RF_edge_low[top0_or_bot1]) && (timeH2X < RF_edge_up[top0_or_bot1])){
-          hod_hits[1] = 1;  
-          break;
-        }
-      }
-    }else{
-      hod_hits[1]=0;
-    }
-    
-    //Loop through H3X hits and compare with road index to find matches  
-    if(H_not_neg[2] && H3X->size() > 0){
-      for (auto it = H3X->begin(); it != H3X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH3X  = (*it)->get_element_id();
-        double timeH3X = (*it)->get_tdc_time();
-        if((eleH3X == rs_obj->roads[i].H3X) && (timeH3X > RF_edge_low[top0_or_bot1]) && (timeH3X < RF_edge_up[top0_or_bot1])){
-          hod_hits[2] = 1;  
-          break;
-        }   
-      }
-    }else{
-      hod_hits[2] = 0;
-
-    }
-
-    //Loop through H4X hits and compare with road index to find matches
-    if(H_not_neg[3] && H4X->size() > 0){
-      for (auto it = H4X->begin(); it != H4X->end(); it++) {
-        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
-        int eleH4X  = (*it)->get_element_id();
-        double timeH4X = (*it)->get_tdc_time();
-        if((eleH4X == rs_obj->roads[i].H4X) && (timeH4X > RF_edge_low[top0_or_bot1]) && (timeH4X < RF_edge_up[top0_or_bot1])){
-          hod_hits[3] = 1;  
-          break;
-        }   
-      }
-    }else{
-      hod_hits[3] = 0;
-
-    }
- 
-    //Checks if hodoscope hits constitute a road hit    
-    rd_hits = 1;
-    for(int j = 0; j < 4; j++){
-      if(H_not_neg[j]){// && hod_hits[j] > 0){
-        rd_hits *= hod_hits[j];
-      }
-      hod_hits[j] = 0;
-    }
-
-            
-    //Fills histogram with road hits
-    if(rd_hits != 0){   
-      hist_rs->Fill(rs_obj->roads[i].road_id);         
-      count_rd++;     
-    }
+  unordered_set<int> set_ele1;
+  unordered_set<int> set_ele2;
+  unordered_set<int> set_ele3;
+  unordered_set<int> set_ele4;
+  for (auto it = H1X->begin(); it != H1X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele1.insert(ele);
   }
-    
+  for (auto it = H2X->begin(); it != H2X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele2.insert(ele);
+  }
+  for (auto it = H3X->begin(); it != H3X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele3.insert(ele);
+  }
+  for (auto it = H4X->begin(); it != H4X->end(); it++) {
+    int    ele  = (*it)->get_element_id();
+    double time = (*it)->get_tdc_time();
+    if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele4.insert(ele);
+  }
+
+  for (unsigned int ir = 0 ; ir < roads->GetNumRoads(); ir++) {
+    TriggerRoad1* road = roads->GetRoad(ir);
+    if (set_ele1.find(road->H1X) != set_ele1.end() &&
+        set_ele2.find(road->H2X) != set_ele2.end() &&
+        set_ele3.find(road->H3X) != set_ele3.end() &&
+        set_ele4.find(road->H4X) != set_ele4.end()   ) h1_rs_cnt->Fill(ir);
+  }
 }
+
+//void OnlMonTrigV1495::RoadHits(vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X,rs_Reader* rs_obj, TH1* hist_rs, int top0_or_bot1)
+//{
+//  //Fills histogram with number of road hits for each road index
+//  int count_rd = 0;
+//
+//  int H_not_neg[4];
+//  int hod_hits[4] = {0,0,0,0}; 
+//  int rd_hits = 1; 
+// 
+//  // First loop through road indices
+//  for(size_t i=0; i<rs_obj->roads.size();i++){
+//  
+//    H_not_neg[0] = (rs_obj->roads[i].H1X != -1) ? 1 : 0;  
+//    H_not_neg[1] = (rs_obj->roads[i].H2X != -1) ? 1 : 0;
+//    H_not_neg[2] = (rs_obj->roads[i].H3X != -1) ? 1 : 0;   
+//    H_not_neg[3] = (rs_obj->roads[i].H4X != -1) ? 1 : 0;
+//    
+//    //Loop through H1X hits and compare with road index to find matches
+//    if(H_not_neg[0] && H1X->size() > 0){
+//      for (auto it = H1X->begin(); it != H1X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH1X  = (*it)->get_element_id();
+//        double timeH1X = (*it)->get_tdc_time();
+//        if((eleH1X == rs_obj->roads[i].H1X) && (timeH1X > RF_edge_low[top0_or_bot1]) && (timeH1X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[0] = 1;
+//          break;
+//        }
+//      }
+//   
+//    }else{
+//      hod_hits[0]=0;
+//    }
+//
+//    //Loop through H2X hits and compare with road index to find matches 
+//    if(H_not_neg[1] && H2X->size() > 0){
+//      for (auto it = H2X->begin(); it != H2X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH2X  = (*it)->get_element_id();
+//        double timeH2X = (*it)->get_tdc_time();
+//        if((eleH2X == rs_obj->roads[i].H2X) && (timeH2X > RF_edge_low[top0_or_bot1]) && (timeH2X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[1] = 1;  
+//          break;
+//        }
+//      }
+//    }else{
+//      hod_hits[1]=0;
+//    }
+//    
+//    //Loop through H3X hits and compare with road index to find matches  
+//    if(H_not_neg[2] && H3X->size() > 0){
+//      for (auto it = H3X->begin(); it != H3X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH3X  = (*it)->get_element_id();
+//        double timeH3X = (*it)->get_tdc_time();
+//        if((eleH3X == rs_obj->roads[i].H3X) && (timeH3X > RF_edge_low[top0_or_bot1]) && (timeH3X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[2] = 1;  
+//          break;
+//        }   
+//      }
+//    }else{
+//      hod_hits[2] = 0;
+//
+//    }
+//
+//    //Loop through H4X hits and compare with road index to find matches
+//    if(H_not_neg[3] && H4X->size() > 0){
+//      for (auto it = H4X->begin(); it != H4X->end(); it++) {
+//        if ((*it)->get_level() != 1) continue; //switched m_lvl for 1
+//        int eleH4X  = (*it)->get_element_id();
+//        double timeH4X = (*it)->get_tdc_time();
+//        if((eleH4X == rs_obj->roads[i].H4X) && (timeH4X > RF_edge_low[top0_or_bot1]) && (timeH4X < RF_edge_up[top0_or_bot1])){
+//          hod_hits[3] = 1;  
+//          break;
+//        }   
+//      }
+//    }else{
+//      hod_hits[3] = 0;
+//
+//    }
+// 
+//    //Checks if hodoscope hits constitute a road hit    
+//    rd_hits = 1;
+//    for(int j = 0; j < 4; j++){
+//      if(H_not_neg[j]){// && hod_hits[j] > 0){
+//        rd_hits *= hod_hits[j];
+//      }
+//      hod_hits[j] = 0;
+//    }
+//
+//            
+//    //Fills histogram with road hits
+//    if(rd_hits != 0){   
+//      hist_rs->Fill(rs_obj->roads[i].road_id);         
+//      count_rd++;     
+//    }
+//  }
+//    
+//}
 
 void OnlMonTrigV1495::FPGA_NIM_Time(vector<SQHit*>* FPGA,vector<SQHit*>* NIM, int NIM_trig_num, int FPGA_trig_num, TH2* h2, TH1* h1){
   //Fill 2D histo with TDC timing for NIM & FPGA trigger
