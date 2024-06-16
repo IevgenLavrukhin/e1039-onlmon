@@ -22,9 +22,9 @@ using namespace std;
 
 OnlMonTrigV1495::OnlMonTrigV1495()
 {
-  NumCanvases(4);
-  Name("OnlMonTrigV1495" ); 
-  Title("V1495 Trigger Analysis" );
+  NumCanvases(2);
+  Name("OnlMonTrigV1495");
+  Title("V1495 Timing");
 }
 
 int OnlMonTrigV1495::InitOnlMon(PHCompositeNode* topNode)
@@ -36,66 +36,22 @@ int OnlMonTrigV1495::InitRunOnlMon(PHCompositeNode* topNode)
 {
   SetDet();
 
-  if (roadset.PosTop()->GetNumRoads() == 0) {
-    SQRun* sq_run = findNode::getClass<SQRun>(topNode, "SQRun");
-    if (!sq_run) return Fun4AllReturnCodes::ABORTEVENT;
-    int LBtop = sq_run->get_v1495_id(2);
-    int LBbot = sq_run->get_v1495_id(3);
-    int ret = roadset.LoadConfig(LBtop, LBbot);
-    if (ret != 0) {
-      cout << "!!WARNING!!  OnlMonTrigEP::InitRunOnlMon():  roadset.LoadConfig returned " << ret << ".\n";
-    }
-  }
-
-  GeomSvc* geom = GeomSvc::instance();
+  //GeomSvc* geom = GeomSvc::instance();
   ostringstream oss;
   
-  int num_tot_ele = 0;
+  //int num_tot_ele = 0;
   //Loop through hodoscopes 
-  for (int i_det = 0; i_det < N_DET; i_det++) {
-    string name = list_det_name[i_det];
-    int  det_id = list_det_id  [i_det];
-    int n_ele  = geom->getPlaneNElements(det_id);
-    num_tot_ele += n_ele;
-    if (det_id <= 0 || n_ele <= 0) {
-      cout << "OnlMonTrigV1495::InitRunOnlMon():  Invalid det_id or n_ele: " 
-           << det_id << " " << n_ele << " at name = " << name << "." << endl;
-      return Fun4AllReturnCodes::ABORTEVENT;
-    }
-  }
-
-  unsigned int n_pos_top = roadset.PosTop()->GetNumRoads();
-  unsigned int n_pos_bot = roadset.PosBot()->GetNumRoads();
-  unsigned int n_neg_top = roadset.NegTop()->GetNumRoads();
-  unsigned int n_neg_bot = roadset.NegBot()->GetNumRoads();
-  h1_rs_cnt[0] = new TH1D("h1_rs_cnt_pos_top", "", n_pos_top, -0.5, n_pos_top-0.5);
-  h1_rs_cnt[1] = new TH1D("h1_rs_cnt_pos_bot", "", n_pos_bot, -0.5, n_pos_bot-0.5);
-  h1_rs_cnt[2] = new TH1D("h1_rs_cnt_neg_top", "", n_neg_top, -0.5, n_neg_top-0.5);
-  h1_rs_cnt[3] = new TH1D("h1_rs_cnt_neg_bot", "", n_neg_bot, -0.5, n_neg_bot-0.5);
-  oss.str("");
-  oss << "Positive Top #minus RS " << roadset.RoadsetID() << ", FW " << hex << roadset.LBTop() << dec << ";Road Index (N=" << n_pos_top << ");Counts";
-  h1_rs_cnt[0]->SetTitle(oss.str().c_str());
-  oss.str("");
-  oss << "Positive Bottom #minus RS " << roadset.RoadsetID() << ", FW " << hex << roadset.LBBot() << dec << ";Road Index (N=" << n_pos_bot << ");Counts";
-  h1_rs_cnt[1]->SetTitle(oss.str().c_str());
-  oss.str("");
-  oss << "Negative Top #minus RS " << roadset.RoadsetID() << ", FW " << hex << roadset.LBTop() << dec << ";Road Index (N=" << n_neg_top << ");Counts";
-  h1_rs_cnt[2]->SetTitle(oss.str().c_str());
-  oss.str("");
-  oss << "Negative Bottom #minus RS " << roadset.RoadsetID() << ", FW " << hex << roadset.LBBot() << dec << ";Road Index (N=" << n_neg_bot << ");Counts";
-  h1_rs_cnt[3]->SetTitle(oss.str().c_str());
-  for (int i = 0; i < 4; i++) RegisterHist(h1_rs_cnt[i]);
-
-  h1_cnt = new TH1D("h1_cnt", "", 20, 0.5, 20.5);
-  RegisterHist(h1_cnt); 
-
-  h1_cnt->SetBinContent(1, roadset.RoadsetID());
-  h1_cnt->SetBinContent(2, roadset.LBTop());
-  h1_cnt->SetBinContent(3, roadset.LBBot());
-  h1_cnt->SetBinContent(4, roadset.PosTop()->GetNumRoads());
-  h1_cnt->SetBinContent(5, roadset.PosBot()->GetNumRoads());
-  h1_cnt->SetBinContent(6, roadset.NegTop()->GetNumRoads());
-  h1_cnt->SetBinContent(7, roadset.NegBot()->GetNumRoads());
+  //for (int i_det = 0; i_det < N_DET; i_det++) {
+  //  string name = list_det_name[i_det];
+  //  int  det_id = list_det_id  [i_det];
+  //  int n_ele  = geom->getPlaneNElements(det_id);
+  //  num_tot_ele += n_ele;
+  //  if (det_id <= 0 || n_ele <= 0) {
+  //    cout << "OnlMonTrigV1495::InitRunOnlMon():  Invalid det_id or n_ele: " 
+  //         << det_id << " " << n_ele << " at name = " << name << "." << endl;
+  //    return Fun4AllReturnCodes::ABORTEVENT;
+  //  }
+  //}
 
   const double DT = 20/9.0; // 4/9 ns per single count of Taiwan TDC
   const int NT    = 400;
@@ -193,29 +149,7 @@ int OnlMonTrigV1495::ProcessEventOnlMon(PHCompositeNode* topNode)
   }
 
   if(evt->get_trigger(SQEvent::MATRIX1) && evt->get_trigger(SQEvent::NIM4)){
-
     FPGA_NIM_Time(vec_FPGA_af, vec_NIM_af, 4, 1,h2_fpga_nim_time_af,h1_trig_diff_TS);
-
-  }else{
-
-  }
-
-//ROAD ID Logic  *************************************************************************** 
-  if(is_FPGA1){
-    vecH1T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[0]);
-    vecH2T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[2]);
-    vecH3T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[4]);
-    vecH4T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[6]);
-    
-    vecH1B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[1]);
-    vecH2B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[3]);
-    vecH3B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[5]);
-    vecH4B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[7]);
-    
-    CountFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.PosTop(), h1_rs_cnt[0]);
-    CountFiredRoads(BOTTOM, vecH1B, vecH2B, vecH3B, vecH4B, roadset.PosBot(), h1_rs_cnt[1]);
-    CountFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.NegTop(), h1_rs_cnt[2]);
-    CountFiredRoads(BOTTOM, vecH1B, vecH2B, vecH3B, vecH4B, roadset.NegBot(), h1_rs_cnt[3]);
   }
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -227,7 +161,6 @@ int OnlMonTrigV1495::EndOnlMon(PHCompositeNode* topNode)
 
 int OnlMonTrigV1495::FindAllMonHist()
 {
-
  // cout << "FIND ALL MON HIST PART" << endl;
   ostringstream oss; 
 
@@ -235,15 +168,6 @@ int OnlMonTrigV1495::FindAllMonHist()
   oss << "h1_trig_diff_TS_" << 0;
   h1_trig_diff_TS = FindMonHist(oss.str().c_str());
   if (! h1_trig_diff_TS) return 1; 
-
-  h1_rs_cnt[0] = FindMonHist("h1_rs_cnt_pos_top");
-  h1_rs_cnt[1] = FindMonHist("h1_rs_cnt_pos_bot");
-  h1_rs_cnt[2] = FindMonHist("h1_rs_cnt_neg_top");
-  h1_rs_cnt[3] = FindMonHist("h1_rs_cnt_neg_bot");
-  if (! h1_rs_cnt[0] || ! h1_rs_cnt[1] || ! h1_rs_cnt[1] || ! h1_rs_cnt[3]) return 1;
-
-  h1_cnt = FindMonHist("h1_cnt");
-  if (! h1_cnt) return 1; 
 
   oss.str("");
   oss << "h2_RF_" << 1;
@@ -260,7 +184,6 @@ int OnlMonTrigV1495::FindAllMonHist()
   h2_fpga_nim_time_af = (TH2*)FindMonHist(oss.str().c_str());
   if (! h2_fpga_nim_time_af) return 1; 
 
-
   return 0;
 }
 
@@ -271,14 +194,6 @@ int OnlMonTrigV1495::DrawMonitor()
   UtilHist::AutoSetRangeX(h2_fpga_nim_time_af); 
   UtilHist::AutoSetRangeY(h2_fpga_nim_time_af); 
   UtilHist::AutoSetRangeX(h2_RF);
-
-  //int roadset_id = (int)h1_cnt->GetBinContent(1);
-  //int LBTop      = (int)h1_cnt->GetBinContent(2);
-  //int LBBot      = (int)h1_cnt->GetBinContent(3);
-  //int n_pos_top  = (int)h1_cnt->GetBinContent(4);
-  //int n_pos_bot  = (int)h1_cnt->GetBinContent(5);
-  //int n_neg_top  = (int)h1_cnt->GetBinContent(6);
-  //int n_neg_bot  = (int)h1_cnt->GetBinContent(7);
 
   OnlMonCanvas* can0 = GetCanvas(0);
   TPad* pad0 = can0->GetMainPad();
@@ -291,7 +206,7 @@ int OnlMonTrigV1495::DrawMonitor()
   TProfile* pr = h2_trig_time->ProfileX(oss.str().c_str());
   pr->SetLineColor(kBlack);
   pr->Draw("E1same");
-*/
+  */
 
   TVirtualPad* pad01 = pad0->cd(2);
   pad01->SetGrid();
@@ -313,35 +228,6 @@ int OnlMonTrigV1495::DrawMonitor()
   pr11->SetLineColor(kBlack);
   pr11->Draw("E1same");
 
-  OnlMonCanvas* can2 = GetCanvas(2);
-  TPad* pad2 = can2->GetMainPad();
-  pad2->Divide(1,2);
-  TVirtualPad* pad20 = pad2->cd(1);
-  pad20->SetGrid();
-  h1_rs_cnt[0]->SetLineColor(kBlue);
-  h1_rs_cnt[0]->Draw();
-
-  //can2->AddMessage(TString::Format("Roadset %d, LBTop 0x%x, LBBot 0x%x", roadset_id, LBTop, LBBot).Data());
-  //can2->AddMessage(TString::Format("N_{PosTop} %d, N_{PosBot} %d, N_{NegTop} %d, N_{NegBot} %d", n_pos_top, n_pos_bot, n_neg_top, n_neg_bot).Data());
-  
-  TVirtualPad* pad21 = pad2->cd(2);
-  pad21->SetGrid();
-  h1_rs_cnt[1]->SetLineColor(kBlue);
-  h1_rs_cnt[1]->Draw();
-
-  OnlMonCanvas* can3 = GetCanvas(3);
-  TPad* pad3 = can3->GetMainPad();
-  pad3->Divide(1,2);
-  TVirtualPad* pad30 = pad3->cd(1);
-  pad30->SetGrid();
-  h1_rs_cnt[2]->SetLineColor(kBlue);
-  h1_rs_cnt[2]->Draw();
-
-  TVirtualPad* pad31 = pad3->cd(2);
-  pad31->SetGrid();
-  h1_rs_cnt[3]->SetLineColor(kBlue);
-  h1_rs_cnt[3]->Draw();
-
   return 0;
 }
 
@@ -359,46 +245,6 @@ void OnlMonTrigV1495::SetDet()
   GeomSvc* geom = GeomSvc::instance();
   for (int ii = 0; ii < N_DET; ii++) {
     list_det_id[ii] = geom->getDetectorID(list_det_name[ii]);
-  }
-}
-
-void OnlMonTrigV1495::CountFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X, TriggerRoads* roads, TH1* h1_rs_cnt)
-{
-  unordered_set<int> set_ele1;
-  unordered_set<int> set_ele2;
-  unordered_set<int> set_ele3;
-  unordered_set<int> set_ele4;
-  for (auto it = H1X->begin(); it != H1X->end(); it++) {
-    int    ele  = (*it)->get_element_id();
-    //double time = (*it)->get_tdc_time();
-    //if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele1.insert(ele);
-    if ((*it)->is_in_time()) set_ele1.insert(ele);
-  }
-  for (auto it = H2X->begin(); it != H2X->end(); it++) {
-    int    ele  = (*it)->get_element_id();
-    //double time = (*it)->get_tdc_time();
-    //if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele2.insert(ele);
-    if ((*it)->is_in_time()) set_ele2.insert(ele);
-  }
-  for (auto it = H3X->begin(); it != H3X->end(); it++) {
-    int    ele  = (*it)->get_element_id();
-    //double time = (*it)->get_tdc_time();
-    //if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele3.insert(ele);
-    if ((*it)->is_in_time()) set_ele3.insert(ele);
-  }
-  for (auto it = H4X->begin(); it != H4X->end(); it++) {
-    int    ele  = (*it)->get_element_id();
-    //double time = (*it)->get_tdc_time();
-    //if (RF_edge_low[top0bot1] < time && time < RF_edge_up[top0bot1]) set_ele4.insert(ele);
-    if ((*it)->is_in_time()) set_ele4.insert(ele);
-  }
-
-  for (unsigned int ir = 0 ; ir < roads->GetNumRoads(); ir++) {
-    TriggerRoad1* road = roads->GetRoad(ir);
-    if (set_ele1.find(road->H1X) != set_ele1.end() &&
-        set_ele2.find(road->H2X) != set_ele2.end() &&
-        set_ele3.find(road->H3X) != set_ele3.end() &&
-        set_ele4.find(road->H4X) != set_ele4.end()   ) h1_rs_cnt->Fill(ir);
   }
 }
 
@@ -443,69 +289,69 @@ void OnlMonTrigV1495::DrawTH2WithPeakPos(TH2* h2, const double cont_min)
   }
 }
 
-void OnlMonTrigV1495:: debug_print(int debug_lvl){
-  //debug function
-  if(debug_lvl == 0){
-    cout << endl;
-    cout << "New Event" << endl;
-    cout << "H1T: ";
-    for (auto it = vecH1T->begin(); it != vecH1T->end(); it++) {
-        double ele1 = (*it)->get_element_id();
-        cout  << ele1 << ", ";
-    }
-    cout << endl;
-
-    cout << "H2T: ";
-    for (auto it = vecH2T->begin(); it != vecH2T->end(); it++) {
-        double ele2 = (*it)->get_element_id();
-        cout  << ele2 << ", ";
-    }
-    cout << endl;
-
-    cout << "H3T: ";
-    for (auto it = vecH3T->begin(); it != vecH3T->end(); it++) {
-        double ele3 = (*it)->get_element_id();
-        cout  << ele3 << ", ";
-    }
-    cout << endl;
-
-    cout << "H4T: ";
-    for (auto it = vecH4T->begin(); it != vecH4T->end(); it++) {
-        double ele4 = (*it)->get_element_id();
-        cout  << ele4 << ", ";
-    }
-    cout << endl;
-    cout << endl;
-
-    cout << "H1B: ";
-    for (auto it = vecH1B->begin(); it != vecH1B->end(); it++) {
-        double ele1 = (*it)->get_element_id();
-        cout  << ele1 << ", ";
-    }
-    cout << endl;
-
-    cout << "H2B: ";
-    for (auto it = vecH2B->begin(); it != vecH2B->end(); it++) {
-        double ele2 = (*it)->get_element_id();
-        cout  << ele2 << ", ";
-    }
-    cout << endl;
-
-    cout << "H3B: ";
-    for (auto it = vecH3B->begin(); it != vecH3B->end(); it++) {
-        double ele3 = (*it)->get_element_id();
-        cout  << ele3 << ", ";
-    }
-    cout << endl;
-
-    cout << "H4B: ";
-    for (auto it = vecH4B->begin(); it != vecH4B->end(); it++) {
-        double ele4 = (*it)->get_element_id();
-        cout  << ele4 << ", ";
-    }
-    cout << endl;
-  }
-}
+//void OnlMonTrigV1495:: debug_print(int debug_lvl){
+//  //debug function
+//  if(debug_lvl == 0){
+//    cout << endl;
+//    cout << "New Event" << endl;
+//    cout << "H1T: ";
+//    for (auto it = vecH1T->begin(); it != vecH1T->end(); it++) {
+//        double ele1 = (*it)->get_element_id();
+//        cout  << ele1 << ", ";
+//    }
+//    cout << endl;
+//
+//    cout << "H2T: ";
+//    for (auto it = vecH2T->begin(); it != vecH2T->end(); it++) {
+//        double ele2 = (*it)->get_element_id();
+//        cout  << ele2 << ", ";
+//    }
+//    cout << endl;
+//
+//    cout << "H3T: ";
+//    for (auto it = vecH3T->begin(); it != vecH3T->end(); it++) {
+//        double ele3 = (*it)->get_element_id();
+//        cout  << ele3 << ", ";
+//    }
+//    cout << endl;
+//
+//    cout << "H4T: ";
+//    for (auto it = vecH4T->begin(); it != vecH4T->end(); it++) {
+//        double ele4 = (*it)->get_element_id();
+//        cout  << ele4 << ", ";
+//    }
+//    cout << endl;
+//    cout << endl;
+//
+//    cout << "H1B: ";
+//    for (auto it = vecH1B->begin(); it != vecH1B->end(); it++) {
+//        double ele1 = (*it)->get_element_id();
+//        cout  << ele1 << ", ";
+//    }
+//    cout << endl;
+//
+//    cout << "H2B: ";
+//    for (auto it = vecH2B->begin(); it != vecH2B->end(); it++) {
+//        double ele2 = (*it)->get_element_id();
+//        cout  << ele2 << ", ";
+//    }
+//    cout << endl;
+//
+//    cout << "H3B: ";
+//    for (auto it = vecH3B->begin(); it != vecH3B->end(); it++) {
+//        double ele3 = (*it)->get_element_id();
+//        cout  << ele3 << ", ";
+//    }
+//    cout << endl;
+//
+//    cout << "H4B: ";
+//    for (auto it = vecH4B->begin(); it != vecH4B->end(); it++) {
+//        double ele4 = (*it)->get_element_id();
+//        cout  << ele4 << ", ";
+//    }
+//    cout << endl;
+//  }
+//}
 
 double OnlMonTrigV1495:: Abs(double var0, double var1){
   //get absolute value of difference between var0 and var1

@@ -47,7 +47,8 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
   Fun4AllEVIOInputManager *in = new Fun4AllEVIOInputManager("MainDaq");
   in->Verbosity(deco_verb);
   in->SetOnline(is_online);
-  //in->UseLocalSpillID(true); // default = false
+  //in->ForceLocalSpillID(true); // default = false
+  in->UseLocalSpillID(true); // default = false
   //if (is_online) in->PretendSpillInterval(20);
   in->fileopen(fn_in);
   se->registerInputManager(in);
@@ -64,8 +65,9 @@ int Fun4MainDaq(const int run_id=46, const int nevent=0, const bool is_online=fa
     se->registerSubsystem(new OnlMonMainDaq());
     se->registerSubsystem(new OnlMonTrigSig());
     se->registerSubsystem(new OnlMonTrigNim());
-    se->registerSubsystem(new OnlMonTrigV1495()); // "rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
-    se->registerSubsystem(new OnlMonTrigEP   ()); // "rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
+    se->registerSubsystem(new OnlMonTrigV1495());
+    se->registerSubsystem(new OnlMonTrigRoad());
+    se->registerSubsystem(new OnlMonTrigEP   ());
     se->registerSubsystem(new OnlMonQie());
     se->registerSubsystem(new OnlMonV1495(OnlMonV1495::H1X, 1));
     se->registerSubsystem(new OnlMonV1495(OnlMonV1495::H2X, 1));
