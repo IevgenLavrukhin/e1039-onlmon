@@ -1,6 +1,5 @@
 #ifndef _ONL_MON_TRIG_EP__H_
 #define _ONL_MON_TRIG_EP__H_
-#define DEBUG_LVL 0
 #include <interface_main/SQEvent.h>
 #include <interface_main/SQHitVector.h>
 #include "TriggerRoadset.h"
@@ -15,9 +14,6 @@ class OnlMonTrigEP: public OnlMonClient {
 
  private:
   TriggerRoadset roadset;
-
-  HodoType_t m_type;
-  int m_lvl;
   std::string list_det_name[N_DET];
   int         list_det_id  [N_DET];
 
@@ -53,7 +49,7 @@ class OnlMonTrigEP: public OnlMonClient {
  private:
   void FindFiredRoads(const int top0bot1, std::vector<SQHit*>* H1X, std::vector<SQHit*>* H2X, std::vector<SQHit*>* H3X, std::vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<int>& list_fired_roads);
 
-  void debug_print(int debug_lvl);
+  void debug_print(int debug_lvl=0);
   void SetDet();
 };
 

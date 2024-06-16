@@ -25,6 +25,8 @@ using namespace std;
 
 OnlMonMainDaq::OnlMonMainDaq()
   : m_spill_id_1st(0)
+  , m_n_spill(0)
+  , m_spill_id_pre(-1)
 {
   Name("OnlMonMainDaq");
   Title("Main DAQ");
@@ -88,12 +90,12 @@ int OnlMonMainDaq::InitRunOnlMon(PHCompositeNode* topNode)
   }
   h2_nhit_pl->GetYaxis()->SetBinLabel(N_PL + 1, "All planes");
 
-  h1_nevt_sp     = new TH1F("h1_nevt_sp"    , ";Spill;N of events"     , 1000, -0.5, 999.5);
-  h1_time_input  = new TH1F("h1_time_input" , ";Spill;Wait/read input" , 1000, -0.5, 999.5);
-  h1_time_deco   = new TH1F("h1_time_deco"  , ";Spill;Decode Coda file", 1000, -0.5, 999.5);
-  h1_time_map    = new TH1F("h1_time_map"   , ";Spill;Map channels"    , 1000, -0.5, 999.5);
-  h1_time_subsys = new TH1F("h1_time_subsys", ";Spill;Process events"  , 1000, -0.5, 999.5);
-  h1_time_output = new TH1F("h1_time_output", ";Spill;Write outputs"   , 1000, -0.5, 999.5);
+  h1_nevt_sp     = new TH1F("h1_nevt_sp"    , ";Spill;N of events"     , 1000, 0.5, 1000.5);
+  h1_time_input  = new TH1F("h1_time_input" , ";Spill;Wait/read input" , 1000, 0.5, 1000.5);
+  h1_time_deco   = new TH1F("h1_time_deco"  , ";Spill;Decode Coda file", 1000, 0.5, 1000.5);
+  h1_time_map    = new TH1F("h1_time_map"   , ";Spill;Map channels"    , 1000, 0.5, 1000.5);
+  h1_time_subsys = new TH1F("h1_time_subsys", ";Spill;Process events"  , 1000, 0.5, 1000.5);
+  h1_time_output = new TH1F("h1_time_output", ";Spill;Write outputs"   , 1000, 0.5, 1000.5);
 
   RegisterHist(h1_trig);
   RegisterHist(h1_n_taiwan);
@@ -180,23 +182,30 @@ int OnlMonMainDaq::ProcessEventOnlMon(PHCompositeNode* topNode)
 
   int nbin_sp = h1_nevt_sp->GetNbinsX();
   int sp_id = evt->get_spill_id();
-  if (m_spill_id_1st == 0) {
-    h1_nevt_sp->SetBinContent(        0,     1); // UF bin to count N of histograms merged.
-    h1_nevt_sp->SetBinContent(nbin_sp+1, sp_id); // OF bin to record the 1st spill ID.
-    m_spill_id_1st = sp_id;
+  bool is_new_spill = sp_id != m_spill_id_pre;
+  if (is_new_spill) {
+    m_spill_id_pre = sp_id;
+    m_n_spill++;
   }
-  int bin_sp = sp_id - m_spill_id_1st + 1;
+  //if (m_spill_id_1st == 0) {
+  //  h1_nevt_sp->SetBinContent(        0,     1); // UF bin to count N of histograms merged.
+  //  h1_nevt_sp->SetBinContent(nbin_sp+1, sp_id); // OF bin to record the 1st spill ID.
+  //  m_spill_id_1st = sp_id;
+  //}
+  //int bin_sp = sp_id - m_spill_id_1st + 1;
+  int bin_sp = m_n_spill;
   if (1 <= bin_sp && bin_sp <= nbin_sp) { // Not underflow nor overflow
     h1_nevt_sp->AddBinContent(bin_sp);
 
     SQHardSpill* hard_sp = (SQHardSpill*)map_hs->get(sp_id);
     if (hard_sp) {
-      static int sp_id_pre = 0;
-      if (sp_id_pre != sp_id) { // Once at the 1st event per spill
+      //static int sp_id_pre = 0;
+      //if (sp_id_pre != sp_id) { // Once at the 1st event per spill
+      if (is_new_spill) {
         h1_time_input->SetBinContent(bin_sp, hard_sp->get_time_input()  / 1000);
         h1_time_deco ->SetBinContent(bin_sp, hard_sp->get_time_decode() / 1000);
         h1_time_map  ->SetBinContent(bin_sp, hard_sp->get_time_map()    / 1000);
-        sp_id_pre = sp_id;
+        //sp_id_pre = sp_id;
       }
       h1_time_subsys->SetBinContent(bin_sp, hard_sp->get_time_subsys() / 1000);
       h1_time_output->SetBinContent(bin_sp, hard_sp->get_time_output() / 1000);
@@ -429,13 +438,13 @@ int OnlMonMainDaq::DrawMonitor()
   pad21->SetGrid();
   pad21->SetLogy();
 
-  int nbin_sp = h1_nevt_sp->GetNbinsX();
-  unsigned int sp_id0 = (unsigned int)(h1_nevt_sp->GetBinContent(nbin_sp + 1) / h1_nevt_sp->GetBinContent(0));
-  oss.str("");
-  oss << "Spill ID #minus_{} " << sp_id0;
-  string title_sp_id = oss.str();
+  //int nbin_sp = h1_nevt_sp->GetNbinsX();
+  //unsigned int sp_id0 = (unsigned int)(h1_nevt_sp->GetBinContent(nbin_sp + 1) / h1_nevt_sp->GetBinContent(0));
+  //oss.str("");
+  //oss << "Spill ID #minus_{} " << sp_id0;
+  //string title_sp_id = oss.str();
 
-  h1_nevt_sp->GetXaxis()->SetTitle(title_sp_id.c_str());
+  //h1_nevt_sp->GetXaxis()->SetTitle(title_sp_id.c_str());
   UtilHist::AutoSetRange(h1_nevt_sp, 0, 0);
   h1_nevt_sp->GetXaxis()->SetLabelSize(0.08); // default = 0.04
   h1_nevt_sp->GetXaxis()->SetTitleSize(0.08); // default = 0.04
@@ -470,7 +479,8 @@ int OnlMonMainDaq::DrawMonitor()
   int bin_lo, bin_hi;
   UtilHist::FindFilledRange(h1_time_input, bin_lo, bin_hi);
 
-  THStack* hs23 = new THStack("hs23", (";" + title_sp_id + ";Time (sec)").c_str());
+  //THStack* hs23 = new THStack("hs23", (";" + title_sp_id + ";Time (sec)").c_str());
+  THStack* hs23 = new THStack("hs23", ";Spill;Time (sec)");
   for (int ih = 0; ih < 5; ih++) {
     int color = ih < 4  ?  ih+1  :  ih+2; // Skip yellow (5).
     h1[ih]->SetLineColor  (color);

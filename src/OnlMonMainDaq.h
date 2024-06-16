@@ -5,6 +5,8 @@
 
 class OnlMonMainDaq: public OnlMonClient {
   unsigned int m_spill_id_1st;
+  unsigned int m_n_spill;
+  int m_spill_id_pre;
   TH1* h1_trig;
   TH1* h1_n_taiwan;
   TH1* h1_evt_qual;

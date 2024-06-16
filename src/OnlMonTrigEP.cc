@@ -163,6 +163,37 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
       if (is_FPGA1) h1_eff_NIM3->Fill(1);
       else          h1_eff_NIM3->Fill(0);
     }
+    //if (emu1 && ! is_FPGA1) {
+    //  cout << "PosTop: "
+    //  for (auto it = roads_pos_top_f.begin(); it != roads_pos_top_f.end(); it++) {
+    //    int h1, h2, h3, h4, tb;
+    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
+    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "." << tb << "]";
+    //  }
+    //  cout << "\n";
+    //  cout << "PosBot: "
+    //  for (auto it = roads_pos_bot_f.begin(); it != roads_pos_bot_f.end(); it++) {
+    //    int h1, h2, h3, h4, tb;
+    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
+    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "]";
+    //  }
+    //  cout << "\n";
+    //  cout << "NegTop: "
+    //  for (auto it = roads_neg_top_f.begin(); it != roads_neg_top_f.end(); it++) {
+    //    int h1, h2, h3, h4, tb;
+    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
+    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "." << tb << "]";
+    //  }
+    //  cout << "\n";
+    //  cout << "NegBot: "
+    //  for (auto it = roads_neg_bot_f.begin(); it != roads_neg_bot_f.end(); it++) {
+    //    int h1, h2, h3, h4, tb;
+    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
+    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "]";
+    //  }
+    //  cout << "\n";
+    //  debug_print();
+    //}
   }
 
   //if (emu1 && evt->get_trigger(SQEvent::NIM3)){
@@ -306,7 +337,8 @@ void OnlMonTrigEP::FindFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vecto
   }
 }
 
-void OnlMonTrigEP:: debug_print(int debug_lvl){
+void OnlMonTrigEP::debug_print(int debug_lvl)
+{
   //debug function
   if(debug_lvl == 0){
     cout << endl; 
