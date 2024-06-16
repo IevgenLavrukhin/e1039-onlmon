@@ -28,7 +28,7 @@ function cmake-this {
 }
 
 function make-this {
-    local -r ARG=$1
+    local -r ARG=${1:-'install'}
     if [ ! -e $DIR_BUILD/Makefile ] ; then
 	echo "The build directory is not ready.  Complete 'cmake-this' first."
 	return 1

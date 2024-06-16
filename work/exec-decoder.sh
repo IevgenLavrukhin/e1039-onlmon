@@ -3,9 +3,10 @@
 #
 # This script sources `/data2/e1039/this-e1039.sh` via `../setup.sh`.
 # You might use '-v' or '-V' options to select a non-standard e1039-core version.
+DIR_SCRIPT=$(dirname $(readlink -f $0))
 
-if [ $(hostname -s) != 'e1039prod1' ] ; then
-    echo "!!ERROR!!  This script must be run on e1039prod1.  Abort."
+if [ $(hostname -s) != 'e1039prod1' -o $USER != 'kenichi' ] ; then
+    echo "!!ERROR!!  This script must be run on e1039prod1 by kenichi.  Abort."
     exit
 fi
 
@@ -50,14 +51,7 @@ done
 shift $((OPTIND - 1))
 echo "  Decoder verbosity: $DECO_VERB"
 
-DIR_SCRIPT=$(dirname $(readlink -f $0))
 source $DIR_SCRIPT/../setup.sh
-#if [ $DIR_SCRIPT = '/data2/e1039/onlmon/e1039-onlmon/work' ] ; then
-#    source /data2/e1039/this-e1039.sh
-#elif [ -z "$E1039_CORE" ] ; then
-#    echo '!!ERROR!!  "E1039_CORE" has not been set.  Abort.'
-#    exit
-#fi
 
 umask 0002
 export E1039_DECODER_MODE=$DECO_MODE

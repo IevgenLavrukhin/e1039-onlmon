@@ -37,6 +37,11 @@ target_link_libraries(OnlMon fun4all db_svc UtilAna ktracker rs_Reader)
 install(TARGETS OnlMon DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 install(FILES ${dist_headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(
+    CODE "file( GLOB pcm_files ${CMAKE_BINARY_DIR}/*_rdict.pcm )"
+    CODE "file( INSTALL \${pcm_files} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )"
+)
 
-add_custom_target(install_pcm ALL COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/lib COMMAND cp -up *_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
-add_dependencies(install_pcm OnlMon)
+## The `install(...)` commmand above is better than the commands below, because it is executed during installation, not build.
+#add_custom_target(install_pcm ALL COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/lib COMMAND cp -up *_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
+#add_dependencies(install_pcm OnlMon)

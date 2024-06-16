@@ -1,17 +1,11 @@
-//R__LOAD_LIBRARY(interface_main)
 R__LOAD_LIBRARY(OnlMon)
 
-int TestOnlMonClient(const int run_id=3620, const int spill_id=0, const int n_evt=0)
+int TestOnlMonClient(const int run_id=5917, const int n_dst_ana=1, const int spill_id=-1)
 {
   gSystem->Umask(0002);
-  //string fn_in = UtilOnline::GetDstFilePath(run_id);
-  ostringstream oss;
-  oss << setfill('0') << "/data2/e1039/dst/run_" << setw(6) << run_id << "/run_" << setw(6) << run_id << "_spill_" << setw(9) << spill_id << "_spin.root";
-  string fn_in = oss.str();
-  cout << "DST = " << fn_in << endl;
   UtilOnline::SetOnlMonDir("/dev/shm/$USER/onlmon/plots");
   OnlMonServer* se = OnlMonServer::instance();
-  //se->setRun(run_id);
+  se->setRun(run_id); // This sets the `RUNNUMBER` flag.
   se->SetOnline(false);
 
   ///
@@ -20,8 +14,9 @@ int TestOnlMonClient(const int run_id=3620, const int spill_id=0, const int n_ev
   //se->registerSubsystem(new OnlMonMainDaq());
   //se->registerSubsystem(new OnlMonTrigSig());
   //se->registerSubsystem(new OnlMonTrigNim());
-  se->registerSubsystem(new OnlMonTrigV1495("rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
-  se->registerSubsystem(new OnlMonTrigEP   ("rs_FPGA1_NIM_top.txt", "", "rs_FPGA1_NIM_bottom.txt", ""));
+  //se->registerSubsystem(new OnlMonTrigV1495());
+  se->registerSubsystem(new OnlMonTrigRoad ());
+  se->registerSubsystem(new OnlMonTrigEP   ());
   //se->registerSubsystem(new OnlMonQie());
   //se->registerSubsystem(new OnlMonV1495(OnlMonV1495::H1X, 1));
   //se->registerSubsystem(new OnlMonV1495(OnlMonV1495::H2X, 1));
@@ -52,11 +47,28 @@ int TestOnlMonClient(const int run_id=3620, const int spill_id=0, const int n_ev
   //se->registerSubsystem(new OnlMonProp (OnlMonProp::P1));
   //se->registerSubsystem(new OnlMonProp (OnlMonProp::P2));
 
-
+  ///
+  /// Fun4All Input & Event Processing.
+  ///
   Fun4AllInputManager* in = new Fun4AllDstInputManager("DSTIN");
   se->registerInputManager(in);
-  in->fileopen(fn_in);
-  se->run(n_evt);
+
+  vector<string> list_dst;
+  if (spill_id >= 0) {
+    list_dst.push_back(UtilOnline::GetSpillDstDir(run_id)+"/"+UtilOnline::GetSpillDstFile(run_id, spill_id));
+  } else {
+    list_dst = UtilOnline::GetListOfSpillDSTs(run_id);
+  }
+  unsigned int n_dst = list_dst.size();
+  cout << "N of DST files = " << n_dst << ", Max N to analyze = " << n_dst_ana << endl;
+  for (unsigned int i_dst = 0; i_dst < n_dst; i_dst++) {
+    string fn_in = list_dst[i_dst];
+    cout << "DST file = " << fn_in << endl;
+    in->fileopen(fn_in);
+    se->run();
+    if (n_dst_ana > 0 && i_dst+1 == n_dst_ana) break;
+  }
+
   se->End();
   delete se;
   cout << "\nAll finished.\n"
