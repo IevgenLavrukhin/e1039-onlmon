@@ -14,18 +14,7 @@ class OnlMonTrigV1495: public OnlMonClient {
   static const int N_DET = 8;
 
  private:
-  //std::string rs_top_0_;
-  //std::string rs_top_1_;
-  //std::string rs_bot_0_;
-  //std::string rs_bot_1_;
-  //std::string rs_path_; ///< Path to folder containing all of the roadset .txt files
-
-  bool is_rs_t[2];
-  bool is_rs_b[2];
-
   TriggerRoadset roadset;
-  //rs_Reader * rs_top[2];
-  //rs_Reader * rs_bot[2];
 
   TH1* h1_cnt;
   TH2* h2_trig_time;
@@ -41,12 +30,8 @@ class OnlMonTrigV1495: public OnlMonClient {
 
   int RF_edge_low[2];
   int RF_edge_up[2];
-  //int top;
-  //int bottom; 
 
   TH1* h1_rs_cnt[4];
-  //TH1* h1_rs_top[2];
-  //TH1* h1_rs_bot[2];
 
   std::vector<SQHit*>* vecH1T;
   std::vector<SQHit*>* vecH2T;
@@ -59,10 +44,11 @@ class OnlMonTrigV1495: public OnlMonClient {
   std::vector<SQHit*>* vecH4B;
  
  public:
-  //OnlMonTrigV1495(const std::string rs_top_0, const std::string rs_top_1, const std::string rs_bot_0, const std::string rs_bot_1, const std::string rs_path=""); 
   OnlMonTrigV1495();
   virtual ~OnlMonTrigV1495() {}
   OnlMonClient* Clone() { return new OnlMonTrigV1495(*this); }
+
+  TriggerRoadset* Roadset() { return &roadset; }
 
   int InitOnlMon(PHCompositeNode *topNode);
   int InitRunOnlMon(PHCompositeNode *topNode);
@@ -77,7 +63,6 @@ class OnlMonTrigV1495: public OnlMonClient {
   void debug_print(int debug_lvl);
   double Abs(double var0, double var1);
   void SetDet();
-  //void RoadHits(vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X,rs_Reader* rs_obj, TH1* hist_rs,int top0_or_bot1);
   void FPGA_NIM_Time(std::vector<SQHit*>* FPGA, std::vector<SQHit*>* NIM, int NIM_trig_num, int FPGA_trig_num, TH2* h2, TH1* h1);
   void DrawTH2WithPeakPos(TH2* h2, const double cont_min=100);
 };

@@ -1,7 +1,6 @@
 #ifndef _ONL_MON_TRIG_EP__H_
 #define _ONL_MON_TRIG_EP__H_
 #define DEBUG_LVL 0
-//#include <rs_Reader/rs_Reader.h>
 #include <interface_main/SQEvent.h>
 #include <interface_main/SQHitVector.h>
 #include "TriggerRoadset.h"
@@ -15,18 +14,7 @@ class OnlMonTrigEP: public OnlMonClient {
   static const int N_DET = 8;
 
  private:
-  //std::string rs_top_0_;
-  //std::string rs_top_1_;
-  //std::string rs_bot_0_;
-  //std::string rs_bot_1_;
-  //std::string rs_path_; ///< Path to folder containing all of the roadset .txt files
-
-  bool is_rs_t[2];
-  bool is_rs_b[2];
-
   TriggerRoadset roadset;
-  //rs_Reader * rs_top[2];
-  //rs_Reader * rs_bot[2];
 
   HodoType_t m_type;
   int m_lvl;
@@ -35,18 +23,11 @@ class OnlMonTrigEP: public OnlMonClient {
 
   int RF_edge_low[2];
   int RF_edge_up[2];
-  //int top;
-  //int bottom;
 
+  TH1* h1_cnt;
   TH1* h1_purity;  
   TH1* h1_eff_NIM3;
 
-  int rs_top_check_p[2];
-  int rs_bot_check_p[2];  
-
-  int rs_top_check_e[2];
-  int rs_bot_check_e[2];
-  
   std::vector<SQHit*>* vecH1T;
   std::vector<SQHit*>* vecH2T;
   std::vector<SQHit*>* vecH3T;
@@ -58,7 +39,6 @@ class OnlMonTrigEP: public OnlMonClient {
   std::vector<SQHit*>* vecH4B;
  
  public:
-  //OnlMonTrigEP(const std::string rs_top_0, const std::string rs_top_1, const std::string rs_bot_0, const std::string rs_bot_1, const std::string rs_path="");
   OnlMonTrigEP();
   virtual ~OnlMonTrigEP() {}
   OnlMonClient* Clone() { return new OnlMonTrigEP(*this); }
@@ -71,12 +51,10 @@ class OnlMonTrigEP: public OnlMonClient {
   int DrawMonitor();
 
  private:
-  void FindFiredRoads(const int top0bot1, std::vector<SQHit*>* H1X, std::vector<SQHit*>* H2X, std::vector<SQHit*>* H3X, std::vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<int> list_fired_roads);
+  void FindFiredRoads(const int top0bot1, std::vector<SQHit*>* H1X, std::vector<SQHit*>* H2X, std::vector<SQHit*>* H3X, std::vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<int>& list_fired_roads);
 
   void debug_print(int debug_lvl);
   void SetDet();
-  //int RoadCheck(std::vector<SQHit*>* H1X, std::vector<SQHit*>* H2X, std::vector<SQHit*>* H3X, std::vector<SQHit*>* H4X,rs_Reader* rs_obj,int top0_or_bot1);
-
 };
 
 #endif /* _ONL_MON_TRIG_EP__H_ */
