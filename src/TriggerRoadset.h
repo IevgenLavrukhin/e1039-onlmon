@@ -23,6 +23,7 @@ public:
  static void Road2Hodo(const int road, int& h1, int& h2, int& h3, int& h4, int& tb);
  static int  Hodo2Road(const int h1, const int h2, const int h3, const int h4, const int tb);
 
+ std::string str(const int level=0) const;
  friend std::ostream& operator<<(std::ostream& os, const TriggerRoad1& rd);
 };
 
@@ -47,6 +48,7 @@ class TriggerRoads {
   int TopBot() const { return m_top_bot; }
   int LoadConfig(const std::string file_name);
 
+  std::string str(const int level=0) const;
   friend std::ostream& operator<<(std::ostream& os, const TriggerRoads& tr);
 };
 
@@ -81,6 +83,7 @@ class TriggerRoadset {
   int LoadConfig(const int roadset_id);
   int LoadConfig(const int firmware_LBTop, const int firmware_LBBot);
 
+  std::string str(const int level=0) const;
   friend std::ostream& operator<<(std::ostream& os, const TriggerRoadset& rs);
 };
 

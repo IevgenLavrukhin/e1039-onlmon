@@ -39,6 +39,16 @@ int TriggerRoad1::Hodo2Road(const int h1, const int h2, const int h3, const int 
   return rr;
 }
 
+std::string TriggerRoad1::str(const int level) const
+{
+  ostringstream oss;
+  oss << road_id;
+  if (level > 0) oss << "[" << H1X << "," << H2X << "," << H3X << "," << H4X << "]";
+  if (level > 1) oss << (charge > 0 ? '+' : '-');
+  if (level > 2) oss << "(" << signal << "," << background << ")";
+  return oss.str();
+}
+
 std::ostream& operator<<(std::ostream& os, const TriggerRoad1& rd)
 {
   os << setw(6) << rd.road_id << ": " << rd.charge << " (" << rd.H1X << ", " << rd.H2X << ", " << rd.H3X << ", " << rd.H4X << ")";
@@ -94,6 +104,17 @@ int TriggerRoads::LoadConfig(const std::string file_name)
   }
   ifs.close();
   return 0; // no validation so far
+}
+
+std::string TriggerRoads::str(const int level) const
+{
+  ostringstream oss;
+  oss << (m_pol > 0 ? '+' : '-') << (m_top_bot > 0 ? 'T' : 'B');
+  if (level > 0) oss << "[" << m_roads.size() << "]";
+  if (level > 1) {
+    for (auto it = m_roads.begin(); it != m_roads.end(); it++) oss << "  " << it->str(level - 2);
+  }
+  return oss.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const TriggerRoads& tr)
@@ -174,6 +195,14 @@ int TriggerRoadset::LoadConfig(const int firmware_LBTop, const int firmware_LBBo
   ifs.close();
   if (roadset_id < 0) return 2;
   return LoadConfig(roadset_id);
+}
+
+std::string TriggerRoadset::str(const int level) const
+{
+  ostringstream oss;
+  oss << m_roadset;
+  if (level > 0) oss << "[" << hex << m_LBTop << "," << m_LBBot << dec << "]";
+  return oss.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const TriggerRoadset& rs)

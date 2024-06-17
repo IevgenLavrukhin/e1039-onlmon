@@ -126,20 +126,20 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
   }
   
 //ROAD SET Logic  *************************************************************************** 
-  vecH1T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[0]);
-  vecH2T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[2]);
-  vecH3T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[4]);
-  vecH4T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[6]);
-  
-  vecH1B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[1]);
-  vecH2B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[3]);
-  vecH3B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[5]);
-  vecH4B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[7]);
+  std::vector<SQHit*>* vecH1T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[0]);
+  std::vector<SQHit*>* vecH2T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[2]);
+  std::vector<SQHit*>* vecH3T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[4]);
+  std::vector<SQHit*>* vecH4T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[6]);
 
-  vector<int> roads_pos_top_f;
-  vector<int> roads_pos_bot_f;
-  vector<int> roads_neg_top_f;
-  vector<int> roads_neg_bot_f;
+  std::vector<SQHit*>* vecH1B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[1]);
+  std::vector<SQHit*>* vecH2B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[3]);
+  std::vector<SQHit*>* vecH3B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[5]);
+  std::vector<SQHit*>* vecH4B = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[7]);
+
+  vector<TriggerRoad1*> roads_pos_top_f;
+  vector<TriggerRoad1*> roads_pos_bot_f;
+  vector<TriggerRoad1*> roads_neg_top_f;
+  vector<TriggerRoad1*> roads_neg_bot_f;
   FindFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.PosTop(), roads_pos_top_f);
   FindFiredRoads(BOTTOM, vecH1B, vecH2B, vecH3B, vecH4B, roadset.PosBot(), roads_pos_bot_f);
   FindFiredRoads(TOP   , vecH1T, vecH2T, vecH3T, vecH4T, roadset.NegTop(), roads_neg_top_f);
@@ -163,37 +163,25 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
       if (is_FPGA1) h1_eff_NIM3->Fill(1);
       else          h1_eff_NIM3->Fill(0);
     }
-    //if (emu1 && ! is_FPGA1) {
-    //  cout << "PosTop: "
-    //  for (auto it = roads_pos_top_f.begin(); it != roads_pos_top_f.end(); it++) {
-    //    int h1, h2, h3, h4, tb;
-    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
-    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "." << tb << "]";
-    //  }
-    //  cout << "\n";
-    //  cout << "PosBot: "
-    //  for (auto it = roads_pos_bot_f.begin(); it != roads_pos_bot_f.end(); it++) {
-    //    int h1, h2, h3, h4, tb;
-    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
-    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "]";
-    //  }
-    //  cout << "\n";
-    //  cout << "NegTop: "
-    //  for (auto it = roads_neg_top_f.begin(); it != roads_neg_top_f.end(); it++) {
-    //    int h1, h2, h3, h4, tb;
-    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
-    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "." << tb << "]";
-    //  }
-    //  cout << "\n";
-    //  cout << "NegBot: "
-    //  for (auto it = roads_neg_bot_f.begin(); it != roads_neg_bot_f.end(); it++) {
-    //    int h1, h2, h3, h4, tb;
-    //    TriggerRoad1::Road2Hodo(*it, h1, h2, h3, h4, tb);
-    //    cout << "  " << *it << "[" << h1 << "." << h2 << "." << h3 << "." << h4 << "]";
-    //  }
-    //  cout << "\n";
-    //  debug_print();
-    //}
+    if (emu1 && ! is_FPGA1) {
+      cout << "Inefficient event:\n  PosTop: ";
+      for (auto it = roads_pos_top_f.begin(); it != roads_pos_top_f.end(); it++) cout << " " << (*it)->str(1);
+      cout << "\n  PosBot: ";
+      for (auto it = roads_pos_bot_f.begin(); it != roads_pos_bot_f.end(); it++) cout << " " << (*it)->str(1);
+      cout << "\n  NegTop: ";
+      for (auto it = roads_neg_top_f.begin(); it != roads_neg_top_f.end(); it++) cout << " " << (*it)->str(1);
+      cout << "\n  NegBot: ";
+      for (auto it = roads_neg_bot_f.begin(); it != roads_neg_bot_f.end(); it++) cout << " " << (*it)->str(1);
+      cout << "\n  ";
+      cout << PrintHitVec("H1T", vecH1T) << "\n  "
+           << PrintHitVec("H2T", vecH2T) << "\n  "
+           << PrintHitVec("H3T", vecH3T) << "\n  "
+           << PrintHitVec("H4T", vecH4T) << "\n  "
+           << PrintHitVec("H1B", vecH1B) << "\n  "
+           << PrintHitVec("H2B", vecH2B) << "\n  "
+           << PrintHitVec("H3B", vecH3B) << "\n  "
+           << PrintHitVec("H4B", vecH4B) << "\n\n";
+    }
   }
 
   //if (emu1 && evt->get_trigger(SQEvent::NIM3)){
@@ -297,7 +285,7 @@ void OnlMonTrigEP::SetDet()
   }
 }
 
-void OnlMonTrigEP::FindFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<int>& list_fired_roads)
+void OnlMonTrigEP::FindFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<TriggerRoad1*>& list_fired_roads)
 {
   unordered_set<int> set_ele1;
   unordered_set<int> set_ele2;
@@ -333,71 +321,16 @@ void OnlMonTrigEP::FindFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vecto
     if (set_ele1.find(road->H1X) != set_ele1.end() &&
         set_ele2.find(road->H2X) != set_ele2.end() &&
         set_ele3.find(road->H3X) != set_ele3.end() &&
-        set_ele4.find(road->H4X) != set_ele4.end()   ) list_fired_roads.push_back(road->road_id);
+        set_ele4.find(road->H4X) != set_ele4.end()   ) list_fired_roads.push_back(road);
   }
 }
 
-void OnlMonTrigEP::debug_print(int debug_lvl)
+std::string OnlMonTrigEP::PrintHitVec(const std::string title, const std::vector<SQHit*>* vec)
 {
-  //debug function
-  if(debug_lvl == 0){
-    cout << endl; 
-    cout << "New Event" << endl;
-    cout << "H1T: ";
-    for (auto it = vecH1T->begin(); it != vecH1T->end(); it++) {
-        double ele1 = (*it)->get_element_id();
-        cout  << ele1 << ", ";
-    }
-    cout << endl;
-
-    cout << "H2T: ";
-    for (auto it = vecH2T->begin(); it != vecH2T->end(); it++) {
-        double ele2 = (*it)->get_element_id();
-        cout  << ele2 << ", ";
-    }
-    cout << endl;
-
-    cout << "H3T: ";
-    for (auto it = vecH3T->begin(); it != vecH3T->end(); it++) {
-        double ele3 = (*it)->get_element_id();
-        cout  << ele3 << ", ";
-    }
-    cout << endl;
-
-    cout << "H4T: ";
-    for (auto it = vecH4T->begin(); it != vecH4T->end(); it++) {
-        double ele4 = (*it)->get_element_id();
-        cout  << ele4 << ", ";
-    }
-    cout << endl;
-    cout << endl;
- 
-    cout << "H1B: ";
-    for (auto it = vecH1B->begin(); it != vecH1B->end(); it++) {
-        double ele1 = (*it)->get_element_id();
-        cout  << ele1 << ", ";
-    }
-    cout << endl;
-
-    cout << "H2B: ";
-    for (auto it = vecH2B->begin(); it != vecH2B->end(); it++) {
-        double ele2 = (*it)->get_element_id();
-        cout  << ele2 << ", ";
-    }
-    cout << endl;
-
-    cout << "H3B: ";
-    for (auto it = vecH3B->begin(); it != vecH3B->end(); it++) {
-        double ele3 = (*it)->get_element_id();
-        cout  << ele3 << ", ";
-    }
-    cout << endl;
-
-    cout << "H4B: ";
-    for (auto it = vecH4B->begin(); it != vecH4B->end(); it++) {
-        double ele4 = (*it)->get_element_id();
-        cout  << ele4 << ", ";
-    }
-    cout << endl;
+  ostringstream oss;
+  oss << title << ":";
+  for (auto it = vec->begin(); it != vec->end(); it++) {
+    if ((*it)->is_in_time()) oss << " " << (*it)->get_element_id();
   }
+  return oss.str();
 }

@@ -23,16 +23,6 @@ class OnlMonTrigEP: public OnlMonClient {
   TH1* h1_cnt;
   TH1* h1_purity;  
   TH1* h1_eff_NIM3;
-
-  std::vector<SQHit*>* vecH1T;
-  std::vector<SQHit*>* vecH2T;
-  std::vector<SQHit*>* vecH3T;
-  std::vector<SQHit*>* vecH4T;
-
-  std::vector<SQHit*>* vecH1B;
-  std::vector<SQHit*>* vecH2B;
-  std::vector<SQHit*>* vecH3B;
-  std::vector<SQHit*>* vecH4B;
  
  public:
   OnlMonTrigEP();
@@ -47,9 +37,8 @@ class OnlMonTrigEP: public OnlMonClient {
   int DrawMonitor();
 
  private:
-  void FindFiredRoads(const int top0bot1, std::vector<SQHit*>* H1X, std::vector<SQHit*>* H2X, std::vector<SQHit*>* H3X, std::vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<int>& list_fired_roads);
-
-  void debug_print(int debug_lvl=0);
+  void FindFiredRoads(const int top0bot1, std::vector<SQHit*>* H1X, std::vector<SQHit*>* H2X, std::vector<SQHit*>* H3X, std::vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<TriggerRoad1*>& list_fired_roads);
+  std::string PrintHitVec(const std::string title, const std::vector<SQHit*>* vec);
   void SetDet();
 };
 
