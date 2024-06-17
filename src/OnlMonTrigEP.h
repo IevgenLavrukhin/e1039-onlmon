@@ -24,6 +24,9 @@ class OnlMonTrigEP: public OnlMonClient {
   TH1* h1_purity;  
   TH1* h1_eff_NIM3;
  
+	//Ievgen
+	int event_counter;
+
  public:
   OnlMonTrigEP();
   virtual ~OnlMonTrigEP() {}
@@ -38,6 +41,7 @@ class OnlMonTrigEP: public OnlMonClient {
 
  private:
   void FindFiredRoads(const int top0bot1, std::vector<SQHit*>* H1X, std::vector<SQHit*>* H2X, std::vector<SQHit*>* H3X, std::vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<TriggerRoad1*>& list_fired_roads);
+
   std::string PrintHitVec(const std::string title, const std::vector<SQHit*>* vec);
   void SetDet();
 };

@@ -28,6 +28,7 @@ OnlMonTrigEP::OnlMonTrigEP()
 
 int OnlMonTrigEP::InitOnlMon(PHCompositeNode* topNode)
 {
+	event_counter = 0;
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -94,6 +95,9 @@ int OnlMonTrigEP::InitRunOnlMon(PHCompositeNode* topNode)
   
   RegisterHist(h1_eff_NIM3);
  
+
+	//Ievgen
+	event_counter = 0;
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -102,12 +106,91 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
   SQEvent*      evt     = findNode::getClass<SQEvent    >(topNode, "SQEvent");
   SQHitVector*  hit_vec = findNode::getClass<SQHitVector>(topNode, "SQHitVector");
   SQHitVector*  trig_hit_vec = findNode::getClass<SQHitVector>(topNode, "SQTriggerHitVector");
+
   if (!evt || !hit_vec  || !trig_hit_vec) return Fun4AllReturnCodes::ABORTEVENT;
 
   //Determine whether event is FPGA1 
   int is_FPGA1 = (evt->get_trigger(SQEvent::MATRIX1)) ? 1 : 0;
-  bool is_not_FPGA1 = evt->get_trigger() & 991; // 0b1111011111 = 991 = non-FPGA1 triggers
- 
+	int is_NIM3 = (evt->get_trigger(SQEvent::NIM3)) ? 1 : 0;
+ // bool is_not_FPGA1 = evt->get_trigger() & 991; // 0b1111011111 = 991 = non-FPGA1 triggers
+
+	
+	auto vec_FPGA = UtilSQHit::FindHitsFast(evt, hit_vec, "AfterInhMatrix");
+	auto vec_NIM = UtilSQHit::FindHitsFast(evt, hit_vec, "AfterInhNIM");
+
+	
+	int is_FPGA1hit =0;
+	int is_NIM3hit = 0;
+	
+	//check if in-time hit in TW TDC for NIM3
+	for(auto it = vec_NIM->begin(); it != vec_NIM->end(); it++){
+			int element = (*it)->get_element_id();
+			double tdc_time = (*it)->get_tdc_time();
+			if(element ==3 && tdc_time>1035 && tdc_time<1045){
+				is_NIM3hit = 1;			
+			}
+
+	}
+	
+	//check if in-time hit in TW TDC for FPGA1
+	for(auto it = vec_FPGA->begin(); it != vec_FPGA->end(); it++){
+      int element = (*it)->get_element_id();
+      double tdc_time = (*it)->get_tdc_time();
+      if(element ==1 && tdc_time>1035 && tdc_time<1045){
+        is_FPGA1hit = 1;
+      }
+  }
+
+  //getting hodoscome hits hits from TW TDC;
+	std::vector<SQHit*>* vecH[8]; //mapping 1T, 1B, 2T, 2B, 3T, 3B, 4T, 4B;
+  for(int i=0; i<8; i++){
+     vecH[i] = UtilSQHit::FindHitsFast(evt, hit_vec, list_det_id[i]);
+  }
+
+
+  vector<TriggerRoad1*> roads_pos_top_f;
+  vector<TriggerRoad1*> roads_pos_bot_f;
+  vector<TriggerRoad1*> roads_neg_top_f;
+  vector<TriggerRoad1*> roads_neg_bot_f;
+  FindFiredRoads(TOP   , vecH[0], vecH[2], vecH[4], vecH[6], roadset.PosTop(), roads_pos_top_f);
+  FindFiredRoads(BOTTOM, vecH[1], vecH[3], vecH[5], vecH[7], roadset.PosBot(), roads_pos_bot_f);
+  FindFiredRoads(TOP   , vecH[0], vecH[2], vecH[4], vecH[6], roadset.NegTop(), roads_neg_top_f);
+  FindFiredRoads(BOTTOM, vecH[1], vecH[3], vecH[5], vecH[7], roadset.NegBot(), roads_neg_bot_f);
+
+
+  int is_FPGA1recon = (roads_pos_top_f.size() > 0 && roads_neg_bot_f.size() > 0) ||
+                      (roads_pos_bot_f.size() > 0 && roads_neg_top_f.size() > 0);
+
+
+	//Getting FPGA1 Efficiency:
+	//if there is in-time TDC hit in NIM3 trigger, check if there is a RS confirmed.
+	if(is_NIM3hit){
+
+		if(is_FPGA1recon){
+			printf("-------- Event = %i  => NIM3 Trigger: found in TDC =%i, found in TS = %i\n", event_counter, is_NIM3hit, is_NIM3);
+   		printf("\t\t => FPGA1 trigger Reconstructed:  found in TDC = %i, found in TS =%i \n",  is_FPGA1hit, is_FPGA1);			
+
+     	if (is_FPGA1hit || is_FPGA1){
+				 h1_eff_NIM3->Fill(1);
+   	  }else{
+         h1_eff_NIM3->Fill(0);
+			}
+    }
+	}			
+	
+	//Getting FPGA1 Purity: 
+	//If there is FPGA1 trigger hit check if we can reconstruct it:
+	if(is_FPGA1hit || is_FPGA1){
+			if(is_FPGA1recon){
+				h1_purity->Fill(1);				
+			}else{
+				h1_purity->Fill(0);
+			}
+
+	}
+
+
+/*
 //RF *************************************************************************************** 
   if(is_FPGA1){
     auto vec1 = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, "RF");
@@ -124,7 +207,7 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
     }
     //cout << "RF_edge: " << RF_edge_low[0] << " " << RF_edge_up[0] << "  " << RF_edge_low[1] << " " << RF_edge_up[1] << endl;
   }
-  
+ 
 //ROAD SET Logic  *************************************************************************** 
   std::vector<SQHit*>* vecH1T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[0]);
   std::vector<SQHit*>* vecH2T = UtilSQHit::FindTriggerHitsFast(evt, trig_hit_vec, list_det_id[2]);
@@ -213,6 +296,10 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
     //}
   }
  
+*/
+	//Ievgen
+	event_counter++;
+
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -303,6 +390,7 @@ void OnlMonTrigEP::SetDet()
     list_det_id[ii] = geom->getDetectorID(list_det_name[ii]);
   }
 }
+
 
 void OnlMonTrigEP::FindFiredRoads(const int top0bot1, vector<SQHit*>* H1X, vector<SQHit*>* H2X, vector<SQHit*>* H3X, vector<SQHit*>* H4X, TriggerRoads* roads, std::vector<TriggerRoad1*>& list_fired_roads)
 {
