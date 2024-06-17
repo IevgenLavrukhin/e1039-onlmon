@@ -163,25 +163,25 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
       if (is_FPGA1) h1_eff_NIM3->Fill(1);
       else          h1_eff_NIM3->Fill(0);
     }
-    if (emu1 && ! is_FPGA1) {
-      cout << "Inefficient event:\n  PosTop: ";
-      for (auto it = roads_pos_top_f.begin(); it != roads_pos_top_f.end(); it++) cout << " " << (*it)->str(1);
-      cout << "\n  PosBot: ";
-      for (auto it = roads_pos_bot_f.begin(); it != roads_pos_bot_f.end(); it++) cout << " " << (*it)->str(1);
-      cout << "\n  NegTop: ";
-      for (auto it = roads_neg_top_f.begin(); it != roads_neg_top_f.end(); it++) cout << " " << (*it)->str(1);
-      cout << "\n  NegBot: ";
-      for (auto it = roads_neg_bot_f.begin(); it != roads_neg_bot_f.end(); it++) cout << " " << (*it)->str(1);
-      cout << "\n  ";
-      cout << PrintHitVec("H1T", vecH1T) << "\n  "
-           << PrintHitVec("H2T", vecH2T) << "\n  "
-           << PrintHitVec("H3T", vecH3T) << "\n  "
-           << PrintHitVec("H4T", vecH4T) << "\n  "
-           << PrintHitVec("H1B", vecH1B) << "\n  "
-           << PrintHitVec("H2B", vecH2B) << "\n  "
-           << PrintHitVec("H3B", vecH3B) << "\n  "
-           << PrintHitVec("H4B", vecH4B) << "\n\n";
-    }
+    //if (emu1 && ! is_FPGA1) {
+    //  cout << "Inefficient event:\n  PosTop: ";
+    //  for (auto it = roads_pos_top_f.begin(); it != roads_pos_top_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  PosBot: ";
+    //  for (auto it = roads_pos_bot_f.begin(); it != roads_pos_bot_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  NegTop: ";
+    //  for (auto it = roads_neg_top_f.begin(); it != roads_neg_top_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  NegBot: ";
+    //  for (auto it = roads_neg_bot_f.begin(); it != roads_neg_bot_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  ";
+    //  cout << PrintHitVec("H1T", vecH1T) << "\n  "
+    //       << PrintHitVec("H2T", vecH2T) << "\n  "
+    //       << PrintHitVec("H3T", vecH3T) << "\n  "
+    //       << PrintHitVec("H4T", vecH4T) << "\n  "
+    //       << PrintHitVec("H1B", vecH1B) << "\n  "
+    //       << PrintHitVec("H2B", vecH2B) << "\n  "
+    //       << PrintHitVec("H3B", vecH3B) << "\n  "
+    //       << PrintHitVec("H4B", vecH4B) << "\n\n";
+    //}
   }
 
   //if (emu1 && evt->get_trigger(SQEvent::NIM3)){
@@ -192,6 +192,25 @@ int OnlMonTrigEP::ProcessEventOnlMon(PHCompositeNode* topNode)
   if (is_FPGA1) {
     if (emu1) h1_purity->Fill(1);
     else      h1_purity->Fill(0);
+    //if (! emu1) {
+    //  cout << "Impure event:\n  PosTop: ";
+    //  for (auto it = roads_pos_top_f.begin(); it != roads_pos_top_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  PosBot: ";
+    //  for (auto it = roads_pos_bot_f.begin(); it != roads_pos_bot_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  NegTop: ";
+    //  for (auto it = roads_neg_top_f.begin(); it != roads_neg_top_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  NegBot: ";
+    //  for (auto it = roads_neg_bot_f.begin(); it != roads_neg_bot_f.end(); it++) cout << " " << (*it)->str(1);
+    //  cout << "\n  ";
+    //  cout << PrintHitVec("H1T", vecH1T) << "\n  "
+    //       << PrintHitVec("H2T", vecH2T) << "\n  "
+    //       << PrintHitVec("H3T", vecH3T) << "\n  "
+    //       << PrintHitVec("H4T", vecH4T) << "\n  "
+    //       << PrintHitVec("H1B", vecH1B) << "\n  "
+    //       << PrintHitVec("H2B", vecH2B) << "\n  "
+    //       << PrintHitVec("H3B", vecH3B) << "\n  "
+    //       << PrintHitVec("H4B", vecH4B) << "\n\n";
+    //}
   }
  
   return Fun4AllReturnCodes::EVENT_OK;
